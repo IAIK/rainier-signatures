@@ -311,10 +311,10 @@ signature_t<GF> rainier_sign_template(const signature_instance_t &instance,
       throw std::runtime_error("invalid parameters");
   } else if constexpr (std::is_same<GF, field::GF2_256>::value) {
     if (instance.block_cipher_params.key_size == 32 &&
-        instance.block_cipher_params.key_size == 3)
+        instance.block_cipher_params.num_sboxes == 3)
       sbox_pairs = RAIN_256_3::rain_with_sbox_output(key, pt, ct2);
     else if (instance.block_cipher_params.key_size == 32 &&
-             instance.block_cipher_params.key_size == 4)
+             instance.block_cipher_params.num_sboxes == 4)
       sbox_pairs = RAIN_256_4::rain_with_sbox_output(key, pt, ct2);
     else
       throw std::runtime_error("invalid parameters");

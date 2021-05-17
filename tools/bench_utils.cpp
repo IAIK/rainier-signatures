@@ -54,9 +54,9 @@ static void print_usage(const char *arg0) {
 
 static void print_usage_free(const char *arg0) {
 #if defined(_MSC_VER)
-  printf("usage: %s iterations instance N tau\n", arg0);
+  printf("usage: %s iterations kappa rain_rounds N tau\n", arg0);
 #else
-  printf("usage: %s [-i iterations] kappa N tau\n", arg0);
+  printf("usage: %s [-i iterations] kappa rain_rounds N tau\n", arg0);
 #endif
 }
 
