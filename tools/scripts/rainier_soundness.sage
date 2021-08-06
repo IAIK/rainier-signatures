@@ -21,7 +21,7 @@ def soundness(fieldsize, N, tau, L):
     min_cost = Infinity
     min_tau = -1
     for tau1 in range(0, tau+1):
-        cost = 1.0/PMF(tau, tau1, (2.0*L/(2**fieldsize - 2*L))) + \
+        cost = 1.0/PMF(tau, tau1, (2.0*L/(2**fieldsize - L))) + \
             N ^ (tau-tau1)
         if cost < min_cost:
             min_cost = cost
