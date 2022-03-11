@@ -712,6 +712,7 @@ TEST_CASE("Custom fast inverse GF(2^256)", "[GF2_256]") {
     field::GF2_256 c = field::GF2_256(
         "0x5c4de32cb0a54923b60675140bb174efdda788bf2a42a902db7e7f99a4842da6");
     REQUIRE(b == c);
+    BENCHMARK("GF inverse") { return a.inverse(); };
   }
 }
 TEST_CASE("Custom slow inverse GF(2^256)", "[GF2_256]") {
@@ -737,6 +738,7 @@ TEST_CASE("Custom slow inverse GF(2^256)", "[GF2_256]") {
     field::GF2_256 c = field::GF2_256(
         "0x5c4de32cb0a54923b60675140bb174efdda788bf2a42a902db7e7f99a4842da6");
     REQUIRE(b == c);
+    BENCHMARK("GF inverse") { return a.inverse_slow(); };
   }
 }
 TEST_CASE("NTL inverse == custom GF(2^256)", "[GF2_256]") {

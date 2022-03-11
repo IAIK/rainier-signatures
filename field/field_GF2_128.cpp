@@ -235,36 +235,21 @@ bool GF2_128::operator!=(const GF2_128 &other) const {
 }
 
 GF2_128 GF2_128::inverse() const {
-  size_t u[11] = {1, 2, 3, 6, 12, 24, 48, 51, 63, 126, 127};
-  __m128i b[11];
-  size_t u_len = 11;
+  constexpr size_t u[11] = {1, 2, 3, 6, 12, 24, 48, 51, 63, 126, 127};
+  constexpr size_t u_len = sizeof(u) / sizeof(u[0]);
+  // q = u[i] - u[i - 1] should give us the corresponding values
+  // (1, 1, 3, 6, 12, 24, 3, 12, 63, 1), which will have corresponding indexes
+  constexpr size_t q_index[u_len - 1] = {0, 0, 2, 3, 4, 5, 2, 4, 8, 0};
+  __m128i b[u_len];
 
   b[0] = *(this->as_const_m128i());
 
   for (size_t i = 1; i < u_len; ++i) {
-    size_t p = u[i - 1];
-    size_t q = u[i] - p;
 
-    size_t p_index;
-    for (size_t m = 0; m < i; ++m) {
-      if (u[m] == p) {
-        p_index = m;
-        break;
-      }
-    }
+    __m128i b_p = b[i - 1];
+    __m128i b_q = b[q_index[i - 1]];
 
-    size_t q_index;
-    for (size_t m = 0; m < i; ++m) {
-      if (u[m] == q) {
-        q_index = m;
-        break;
-      }
-    }
-
-    __m128i b_p = b[p_index];
-    __m128i b_q = b[q_index];
-
-    for (size_t m = q; m; --m) {
+    for (size_t m = u[q_index[i - 1]]; m; --m) {
       gf128sqr(&b_p, &b_p);
     }
 

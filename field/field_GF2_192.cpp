@@ -203,37 +203,23 @@ bool GF2_192::operator!=(const GF2_192 &other) const {
 }
 
 GF2_192 GF2_192::inverse() const {
-  size_t u[12] = {1, 2, 3, 5, 10, 20, 23, 46, 92, 95, 190, 191};
-  __m128i b[12][2];
-  size_t u_len = 12;
+  constexpr size_t u[12] = {1, 2, 3, 5, 10, 20, 23, 46, 92, 95, 190, 191};
+  constexpr size_t u_len = sizeof(u) / sizeof(u[0]);
+  // q = u[i] - u[i - 1] should give us the corresponding values
+  // (1, 1, 2, 5, 10, 3, 23, 46, 3, 95, 1), which will have corresponding
+  // indexes
+  constexpr size_t q_index[u_len - 1] = {0, 0, 1, 3, 4, 2, 6, 7, 2, 9, 0};
+  __m128i b[u_len][2];
 
-  b[0][0] = (this->as_const_m128i()[0]);
-  b[0][1] = (this->as_const_m128i()[1]);
+  b[0][0] = this->as_const_m128i()[0];
+  b[0][1] = this->as_const_m128i()[1];
 
   for (size_t i = 1; i < u_len; ++i) {
-    size_t p = u[i - 1];
-    size_t q = u[i] - p;
 
-    size_t p_index;
-    for (size_t m = 0; m < i; ++m) {
-      if (u[m] == p) {
-        p_index = m;
-        break;
-      }
-    }
+    __m128i b_p[2] = {b[i - 1][0], b[i - 1][1]};
+    __m128i b_q[2] = {b[q_index[i - 1]][0], b[q_index[i - 1]][1]};
 
-    size_t q_index;
-    for (size_t m = 0; m < i; ++m) {
-      if (u[m] == q) {
-        q_index = m;
-        break;
-      }
-    }
-
-    __m128i b_p[2] = {b[p_index][0], b[p_index][1]};
-    __m128i b_q[2] = {b[q_index][0], b[q_index][1]};
-
-    for (size_t m = q; m; --m) {
+    for (size_t m = u[q_index[i - 1]]; m; --m) {
       gf192sqr(b_p, b_p);
     }
 
