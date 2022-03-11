@@ -6,7 +6,8 @@
 
 #include <NTL/GF2EX.h>
 
-TEST_CASE("Constructors for GF(2^192)", "[GF2_192]") {
+TEST_CASE("Constructors for GF(2^192)", "[GF2_192]")
+{
   field::GF2_192 a;
   a.set_coeff(0);
   a.set_coeff(1);
@@ -111,7 +112,8 @@ TEST_CASE("Constructors for GF(2^192)", "[GF2_192]") {
   REQUIRE(a == a_str);
 }
 
-TEST_CASE("Basic Arithmetic GF(2^192)", "[GF2_192]") {
+TEST_CASE("Basic Arithmetic GF(2^192)", "[GF2_192]")
+{
   field::GF2_192 zero;
   field::GF2_192 one(1);
   field::GF2_192 x(2);
@@ -130,7 +132,8 @@ TEST_CASE("Basic Arithmetic GF(2^192)", "[GF2_192]") {
   REQUIRE(x * one == x);
   REQUIRE(x * x == x_2);
 }
-TEST_CASE("Modular Arithmetic KATs GF(2^192)", "[GF2_192]") {
+TEST_CASE("Modular Arithmetic KATs GF(2^192)", "[GF2_192]")
+{
   field::GF2_192 a, b, ab;
   a.set_coeff(0);
   a.set_coeff(1);
@@ -444,7 +447,8 @@ TEST_CASE("Modular Arithmetic KATs GF(2^192)", "[GF2_192]") {
   REQUIRE(ab_calc == ab);
 }
 
-TEST_CASE("NTL to_bytes = custom to_bytes GF(2^192)", "[field]") {
+TEST_CASE("NTL to_bytes = custom to_bytes GF(2^192)", "[field]")
+{
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
   field::GF2_192 a, b;
   a.set_coeff(103);
@@ -523,7 +527,8 @@ TEST_CASE("NTL to_bytes = custom to_bytes GF(2^192)", "[field]") {
   REQUIRE(buffer_a == buffer_c);
   REQUIRE(buffer_b == buffer_d);
 }
-TEST_CASE("NTL to custom conversion GF(2^192)", "[GF2_192]") {
+TEST_CASE("NTL to custom conversion GF(2^192)", "[GF2_192]")
+{
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
   field::GF2_192 a, b;
   a.set_coeff(31);
@@ -559,7 +564,60 @@ TEST_CASE("NTL to custom conversion GF(2^192)", "[GF2_192]") {
   field::GF2_192 b2 = utils::ntl_to_custom<field::GF2_192>(b_ntl);
   REQUIRE(b == b2);
 }
-TEST_CASE("NTL inverse == custom GF(2^192)", "[GF2_192]") {
+TEST_CASE("Custom fast inverse GF(2^192)", "[GF2_192]")
+{
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
+  field::GF2_192 a;
+  a.set_coeff(130);
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++)
+  {
+    field::GF2_192 b = a.inverse();
+    field::GF2_192 c = field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
+    REQUIRE(b == c);
+  }
+  // BENCHMARK("GF inverse") { return a.inverse(); };
+}
+TEST_CASE("Custom slow inverse GF(2^192)", "[GF2_192]")
+{
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
+  field::GF2_192 a;
+  a.set_coeff(130);
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++)
+  {
+    field::GF2_192 b = a.inverse_slow();
+    field::GF2_192 c = field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
+    REQUIRE(b == c);
+  }
+  // BENCHMARK("GF inverse") { return a.inverse_slow(); };
+}
+TEST_CASE("NTL inverse == custom GF(2^192)", "[GF2_192]")
+{
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
   field::GF2_192 a;
   a.set_coeff(31);
@@ -586,19 +644,22 @@ TEST_CASE("NTL inverse == custom GF(2^192)", "[GF2_192]") {
   REQUIRE(b == c);
   REQUIRE(a * b == field::GF2_192(1));
 }
-TEST_CASE("NTL interpolation == custom GF(2^192)", "[GF2_192]") {
+TEST_CASE("NTL interpolation == custom GF(2^192)", "[GF2_192]")
+{
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
 
   std::vector<field::GF2_192> a =
       field::get_first_n_field_elements<field::GF2_192>(100);
   vec_GF2E b = utils::get_first_n_field_elements(100);
-  for (size_t i = 0; i < 100; i++) {
+  for (size_t i = 0; i < 100; i++)
+  {
     REQUIRE(a[i] == utils::ntl_to_custom<field::GF2_192>(b[i]));
   }
   std::vector<field::GF2_192> a_from_roots = field::build_from_roots(a);
   GF2EX b_from_roots = BuildFromRoots(b);
   REQUIRE(a_from_roots.size() == (size_t)b_from_roots.rep.length());
-  for (size_t j = 0; j < a_from_roots.size(); j++) {
+  for (size_t j = 0; j < a_from_roots.size(); j++)
+  {
     REQUIRE(a_from_roots[j] ==
             utils::ntl_to_custom<field::GF2_192>(b_from_roots[j]));
   }
@@ -608,14 +669,17 @@ TEST_CASE("NTL interpolation == custom GF(2^192)", "[GF2_192]") {
   std::vector<GF2EX> b_lag = utils::precompute_lagrange_polynomials(b);
 
   REQUIRE(a_lag.size() == b_lag.size());
-  for (size_t i = 0; i < a_lag.size(); i++) {
+  for (size_t i = 0; i < a_lag.size(); i++)
+  {
     REQUIRE(a_lag[i].size() == (size_t)b_lag[i].rep.length());
-    for (size_t j = 0; j < a_lag[i].size(); j++) {
+    for (size_t j = 0; j < a_lag[i].size(); j++)
+    {
       REQUIRE(a_lag[i][j] == utils::ntl_to_custom<field::GF2_192>(b_lag[i][j]));
     }
   }
 }
-TEST_CASE("NTL dot product == custom GF(2^192)", "[GF2_192]") {
+TEST_CASE("NTL dot product == custom GF(2^192)", "[GF2_192]")
+{
 
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
   std::vector<field::GF2_192> a =
@@ -638,7 +702,8 @@ TEST_CASE("NTL dot product == custom GF(2^192)", "[GF2_192]") {
 }
 
 TEST_CASE("Matmul and Transposed Matmul have same result GF(2^192)",
-          "[GF2_192]") {
+          "[GF2_192]")
+{
   alignas(32) constexpr std::array<uint64_t, 4> m1[192] = {
       {{0xd84336c885addb60, 0x4ae24caf9caef2f9, 0xf84e03121d13e134, 0x0}},
       {{0x7f6622e9b6ae69f7, 0xe8e2308534b2f978, 0x798ed4b51481c924, 0x0}},
