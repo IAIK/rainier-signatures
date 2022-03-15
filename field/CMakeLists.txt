@@ -38,7 +38,7 @@ Include(FetchContent)
 FetchContent_Declare(
   Catch2
   GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-  GIT_TAG        v2.13.1)
+  GIT_TAG        v2.13.8)
 
 FetchContent_MakeAvailable(Catch2)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${Catch2_SOURCE_DIR}/contrib/")
@@ -58,5 +58,4 @@ add_test(util_test)
 add_test(field_GF2_128_test)
 add_test(field_GF2_192_test)
 add_test(field_GF2_256_test)
-
 endif()

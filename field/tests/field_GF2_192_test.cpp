@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_MAIN
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include <catch2/catch.hpp>
 
 #include "../field.h"
@@ -581,7 +582,7 @@ TEST_CASE("Custom fast inverse GF(2^192)", "[GF2_192]") {
     field::GF2_192 c =
         field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
     REQUIRE(b == c);
-    BENCHMARK("GF inverse") { return a.inverse(); };
+    // BENCHMARK("GF inverse") { return a.inverse(); };
   }
 }
 TEST_CASE("Custom slow inverse GF(2^192)", "[GF2_192]") {
@@ -606,8 +607,8 @@ TEST_CASE("Custom slow inverse GF(2^192)", "[GF2_192]") {
     field::GF2_192 c =
         field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
     REQUIRE(b == c);
-    BENCHMARK("GF inverse") { return a.inverse_slow(); };
-    }
+    // BENCHMARK("GF inverse") { return a.inverse_slow(); };
+  }
 }
 TEST_CASE("NTL inverse == custom GF(2^192)", "[GF2_192]") {
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
