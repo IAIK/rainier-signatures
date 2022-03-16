@@ -31,7 +31,6 @@ std::ostream &operator<<(std::ostream &os, const field::GF2_256 &ele);
 namespace field {
 
 class GF2_128 {
-
   alignas(16) std::array<uint64_t, 2> data;
 
   // helper functions for sse stuff
@@ -66,6 +65,7 @@ public:
   bool operator!=(const GF2_128 &other) const;
 
   GF2_128 inverse() const;
+  GF2_128 inverse_slow() const;
   GF2_128 multiply_with_GF2_matrix(const std::array<uint64_t, 2> *matrix) const;
   GF2_128 multiply_with_transposed_GF2_matrix(
       const std::array<uint64_t, 2> *matrix) const;
@@ -123,6 +123,7 @@ public:
   bool operator!=(const GF2_192 &other) const;
 
   GF2_192 inverse() const;
+  GF2_192 inverse_slow() const;
   GF2_192 multiply_with_GF2_matrix(const std::array<uint64_t, 4> *matrix) const;
   GF2_192 multiply_with_transposed_GF2_matrix(
       const std::array<uint64_t, 4> *matrix) const;
@@ -179,6 +180,7 @@ public:
   bool operator!=(const GF2_256 &other) const;
 
   GF2_256 inverse() const;
+  GF2_256 inverse_slow() const;
   GF2_256 multiply_with_GF2_matrix(const std::array<uint64_t, 4> *matrix) const;
   GF2_256 multiply_with_transposed_GF2_matrix(
       const std::array<uint64_t, 4> *matrix) const;

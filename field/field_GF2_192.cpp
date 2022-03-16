@@ -203,6 +203,36 @@ bool GF2_192::operator!=(const GF2_192 &other) const {
 }
 
 GF2_192 GF2_192::inverse() const {
+  constexpr size_t u[12] = {1, 2, 3, 5, 10, 20, 23, 46, 92, 95, 190, 191};
+  constexpr size_t u_len = sizeof(u) / sizeof(u[0]);
+  // q = u[i] - u[i - 1] should give us the corresponding values
+  // (1, 1, 2, 5, 10, 3, 23, 46, 3, 95, 1), which will have corresponding
+  // indexes
+  constexpr size_t q_index[u_len - 1] = {0, 0, 1, 3, 4, 2, 6, 7, 2, 9, 0};
+  __m128i b[u_len][2];
+
+  b[0][0] = this->as_const_m128i()[0];
+  b[0][1] = this->as_const_m128i()[1];
+
+  for (size_t i = 1; i < u_len; ++i) {
+
+    __m128i b_p[2] = {b[i - 1][0], b[i - 1][1]};
+    __m128i b_q[2] = {b[q_index[i - 1]][0], b[q_index[i - 1]][1]};
+
+    for (size_t m = u[q_index[i - 1]]; m; --m) {
+      gf192sqr(b_p, b_p);
+    }
+
+    gf192mul(b[i], b_p, b_q);
+  }
+
+  GF2_192 out;
+  gf192sqr(out.as_m128i(), b[u_len - 1]);
+
+  return out;
+}
+
+GF2_192 GF2_192::inverse_slow() const {
   // Fixed-op square-multiply
   // 2^n - 2 in binary is 0b1111..10
   __m128i t1[2], t2[2];

@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_MAIN
+#define CATCH_CONFIG_ENABLE_BENCHMARKING
 #include <catch2/catch.hpp>
 
 #include "../field.h"
@@ -558,6 +559,56 @@ TEST_CASE("NTL to custom conversion GF(2^192)", "[GF2_192]") {
   GF2E b_ntl = ab_ntl / a_ntl;
   field::GF2_192 b2 = utils::ntl_to_custom<field::GF2_192>(b_ntl);
   REQUIRE(b == b2);
+}
+TEST_CASE("Custom fast inverse GF(2^192)", "[GF2_192]") {
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
+  field::GF2_192 a;
+  a.set_coeff(130);
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++) {
+    field::GF2_192 b = a.inverse();
+    field::GF2_192 c =
+        field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
+    REQUIRE(b == c);
+    BENCHMARK("GF inverse") { return a.inverse(); };
+  }
+}
+TEST_CASE("Custom slow inverse GF(2^192)", "[GF2_192]") {
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);
+  field::GF2_192 a;
+  a.set_coeff(130);
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++) {
+    field::GF2_192 b = a.inverse_slow();
+    field::GF2_192 c =
+        field::GF2_192("0x478e620c7de407c844d02bd0c8f51295d464b471059a5e91");
+    REQUIRE(b == c);
+    BENCHMARK("GF inverse") { return a.inverse_slow(); };
+  }
 }
 TEST_CASE("NTL inverse == custom GF(2^192)", "[GF2_192]") {
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_192);

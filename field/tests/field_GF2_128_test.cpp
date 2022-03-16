@@ -382,6 +382,52 @@ TEST_CASE("NTL to custom conversion GF(2^128)", "[GF2_128]") {
   field::GF2_128 b2 = utils::ntl_to_custom<field::GF2_128>(b_ntl);
   REQUIRE(b == b2);
 }
+TEST_CASE("Custom fast inverse GF(2^128)", "[GF2_128]") {
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_128);
+  field::GF2_128 a;
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++) {
+    field::GF2_128 b = a.inverse();
+    field::GF2_128 c = field::GF2_128("0x8368bf5aa4edd94e58692b13a40f3197");
+    REQUIRE(b == c);
+  }
+  BENCHMARK("GF inverse") { return a.inverse(); };
+}
+TEST_CASE("Custom slow inverse GF(2^128)", "[GF2_128]") {
+  utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_128);
+  field::GF2_128 a;
+  a.set_coeff(31);
+  a.set_coeff(29);
+  a.set_coeff(28);
+  a.set_coeff(24);
+  a.set_coeff(23);
+  a.set_coeff(21);
+  a.set_coeff(19);
+  a.set_coeff(15);
+  a.set_coeff(14);
+  a.set_coeff(9);
+  a.set_coeff(8);
+  a.set_coeff(0);
+
+  for (size_t i = 0; i < 1; i++) {
+    field::GF2_128 b = a.inverse_slow();
+    field::GF2_128 c = field::GF2_128("0x8368bf5aa4edd94e58692b13a40f3197");
+    REQUIRE(b == c);
+  }
+  BENCHMARK("GF inverse") { return a.inverse_slow(); };
+}
 TEST_CASE("NTL inverse == custom inverse GF(2^128)", "[GF2_128]") {
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_128);
   field::GF2_128 a;
