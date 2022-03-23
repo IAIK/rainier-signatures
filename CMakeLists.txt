@@ -76,6 +76,6 @@ function(add_test test_name)
 endfunction()
 
 add_test(rain_test)
-add_test(signature_test)
-add_test(tree_test)
+#add_test(signature_test)
+#add_test(tree_test)
 endif()

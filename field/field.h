@@ -204,9 +204,18 @@ std::vector<GF> interpolate_with_precomputation(
     const std::vector<GF> &y_values);
 
 template <typename GF>
+std::vector<std::vector<GF>>
+precompute_numerator_half(const std::vector<GF> &x_values, bool first_half);
+
+template <typename GF>
+std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
+                                            std::vector<GF> y_values);
+
+template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);
 
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point);
+
 } // namespace field
 
 template <typename GF>

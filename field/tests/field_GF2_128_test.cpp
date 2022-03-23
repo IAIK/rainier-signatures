@@ -7,6 +7,8 @@
 
 #include <NTL/GF2EX.h>
 
+/*
+
 TEST_CASE("Constructors for GF(2^128)", "[GF2_128]") {
   field::GF2_128 a;
   a.set_coeff(126);
@@ -493,6 +495,29 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
   };
 }
 
+*/
+
+TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
+  std::vector<field::GF2_128> x =
+      field::get_first_n_field_elements<field::GF2_128>(32);
+  std::vector<field::GF2_128> y =
+      field::get_first_n_field_elements<field::GF2_128>(32);
+  std::vector<std::vector<field::GF2_128>> x_lag =
+      field::precompute_lagrange_polynomials(x);
+  std::vector<field::GF2_128> result =
+      field::interpolate_with_precomputation(x_lag, y);
+
+  std::vector<field::GF2_128> x_fast =
+      field::get_first_n_field_elements<field::GF2_128>(32);
+  std::vector<field::GF2_128> y_fast =
+      field::get_first_n_field_elements<field::GF2_128>(32);
+  std::vector<field::GF2_128> result_fast =
+      field::interpolate_with_seperation(x_fast, y_fast);
+
+  REQUIRE(result.size() == result_fast.size());
+}
+
+/*
 TEST_CASE("NTL dot product == custom GF(2^128)", "[GF2_128]") {
 
   utils::init_ntl_extension_field(utils::NTL_INSTANCE::GF2_128);
@@ -784,3 +809,5 @@ TEST_CASE("Matmul and Transposed Matmul have same result GF(2^128)",
       v.multiply_with_transposed_GF2_matrix(m1_transposed);
   REQUIRE(result == result_transposed);
 }
+
+*/
