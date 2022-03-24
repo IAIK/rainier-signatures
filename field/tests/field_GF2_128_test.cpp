@@ -499,22 +499,35 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
 
 TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
   std::vector<field::GF2_128> x =
-      field::get_first_n_field_elements<field::GF2_128>(32);
+      field::get_first_n_field_elements<field::GF2_128>(4);
   std::vector<field::GF2_128> y =
-      field::get_first_n_field_elements<field::GF2_128>(32);
+      field::get_first_n_field_elements<field::GF2_128>(4);
   std::vector<std::vector<field::GF2_128>> x_lag =
       field::precompute_lagrange_polynomials(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
   std::vector<field::GF2_128> x_fast =
-      field::get_first_n_field_elements<field::GF2_128>(32);
+      field::get_first_n_field_elements<field::GF2_128>(4);
   std::vector<field::GF2_128> y_fast =
-      field::get_first_n_field_elements<field::GF2_128>(32);
+      field::get_first_n_field_elements<field::GF2_128>(4);
   std::vector<field::GF2_128> result_fast =
       field::interpolate_with_seperation(x_fast, y_fast);
 
+  std::cout << "SLOW INTERP RESULT" << std::endl;
+  for (size_t i = 0; i < result.size(); i++) {
+    std::cout << result[i] << ",";
+  }
+  std::cout << std::endl;
+
+  std::cout << "FAST INTERP RESULT" << std::endl;
+  for (size_t i = 0; i < result_fast.size(); i++) {
+    std::cout << result_fast[i] << ",";
+  }
+
   REQUIRE(result.size() == result_fast.size());
+
+  REQUIRE(result == result_fast);
 }
 
 /*
