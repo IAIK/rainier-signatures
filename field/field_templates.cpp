@@ -35,6 +35,63 @@ precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
 }
 
 template <typename GF>
+std::vector<std::vector<GF>>
+precompute_lagrange_polynomials(const std::vector<GF> &x_values,
+                                bool firsthalf) {
+
+  size_t half_size = x_values.size() / 2;
+  size_t full_size = x_values.size();
+  std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
+  precomputed_lagrange_polynomials.reserve(half_size);
+
+  if (firsthalf) {
+    std::vector<GF> x_except_k;
+    GF denominator;
+    for (size_t k = 0; k < half_size; k++) {
+      denominator = GF(1);
+      x_except_k.clear();
+      x_except_k.reserve(half_size - 1);
+      for (size_t i_n = 0; i_n < half_size; i_n++) {
+        if (k != i_n) {
+          x_except_k.push_back(x_values[i_n]);
+        }
+      }
+      for (size_t i_d = 0; i_d < full_size; i_d++) {
+        if (k != i_d) {
+          denominator *= x_values[k] - x_values[i_d];
+        }
+      }
+      std::vector<GF> numerator = build_from_roots(x_except_k);
+      numerator = numerator * denominator.inverse();
+      precomputed_lagrange_polynomials.push_back(numerator);
+    }
+  } else {
+    std::vector<GF> x_except_k;
+    GF denominator;
+    for (size_t k = half_size; k < full_size; k++) {
+      denominator = GF(1);
+      x_except_k.clear();
+      x_except_k.reserve(half_size - 1);
+      for (size_t i_n = half_size; i_n < full_size; i_n++) {
+        if (k != i_n) {
+          x_except_k.push_back(x_values[i_n]);
+        }
+      }
+      for (size_t i_d = 0; i_d < full_size; i_d++) {
+        if (k != i_d) {
+          denominator *= x_values[k] - x_values[i_d];
+        }
+      }
+      std::vector<GF> numerator = build_from_roots(x_except_k);
+      numerator = numerator * denominator.inverse();
+      precomputed_lagrange_polynomials.push_back(numerator);
+    }
+  }
+
+  return precomputed_lagrange_polynomials;
+}
+
+template <typename GF>
 std::vector<GF> interpolate_with_precomputation(
     const std::vector<std::vector<GF>> &precomputed_lagrange_polynomials,
     const std::vector<GF> &y_values) {
@@ -114,8 +171,8 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
   std::cout << "INSIDE - " << values_size << std::endl;
   std::cout << "1" << std::endl;
 
-  // If x.size() != 4, we continue with recurssion
-  if (values_size != 4) {
+  // If x.size() != 2, we continue with recurssion
+  if (values_size != 2) {
 
     std::cout << "2" << std::endl;
 
@@ -127,6 +184,22 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
                                   numerator_second_half.size() - 1);
     results_first += interpolation_result_first * numerator_second_half;
 
+    std::cout << "numerator_second_half" << std::endl;
+    for (size_t i = 0; i < numerator_second_half.size(); i++) {
+      std::cout << numerator_second_half[i] << ",";
+    }
+    std::cout << std::endl;
+    std::cout << "interpolation_result_first" << std::endl;
+    for (size_t i = 0; i < interpolation_result_first.size(); i++) {
+      std::cout << interpolation_result_first[i] << ",";
+    }
+    std::cout << std::endl;
+    std::cout << "results_first" << std::endl;
+    for (size_t i = 0; i < results_first.size(); i++) {
+      std::cout << results_first[i] << ",";
+    }
+    std::cout << std::endl;
+
     std::cout << "3" << std::endl;
 
     // Recurssion return will multiply with the MUL_1^N/2 (x-x_i) part
@@ -137,13 +210,27 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
                                    numerator_first_half.size() - 1);
     results_second += interpolation_result_second * numerator_first_half;
 
+    std::cout << "numerator_first_half" << std::endl;
+    for (size_t i = 0; i < numerator_first_half.size(); i++) {
+      std::cout << numerator_first_half[i] << ",";
+    }
+    std::cout << std::endl;
+    std::cout << "interpolation_result_second" << std::endl;
+    for (size_t i = 0; i < interpolation_result_second.size(); i++) {
+      std::cout << interpolation_result_second[i] << ",";
+    }
+    std::cout << std::endl;
+    std::cout << "results_second" << std::endl;
+    for (size_t i = 0; i < results_second.size(); i++) {
+      std::cout << results_second[i] << ",";
+    }
+    std::cout << std::endl;
+
     std::cout << "4" << std::endl;
 
     std::vector<GF> results_final(results_first.size());
     // Adding the result first and second
-    for (size_t i = 0; i < results_first.size(); ++i) {
-      results_final[i] = results_first[i] + results_second[i];
-    }
+    results_final = results_first + results_second;
 
     std::cout << "5" << std::endl;
 
@@ -151,16 +238,18 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     return results_final;
 
   }
-  // If x.size() = 4 then we apply the fast algorithm
+  // If x.size() = 2 then we apply the fast algorithm
   else {
 
     std::cout << "6" << std::endl;
 
     // Building SUM_1^N/2 u_k * a_k * (MUL_1wherei!=k^(N/2) x - x_i )
     std::vector<std::vector<GF>> precomputed_lagrange_polynomials_first =
-        precompute_lagrange_polynomials(x_values_first_half);
+        precompute_lagrange_polynomials(x_values, true);
+
     std::vector<GF> first_part = interpolate_with_precomputation(
         precomputed_lagrange_polynomials_first, y_values_first_half);
+
     // Multiplying the res first with the numerator second half
     std::vector<GF> results_first(numerator_second_half.size() +
                                   first_part.size() - 1);
@@ -170,9 +259,11 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
 
     // Building SUM_(N/2)+1^N u_k * a_k * (MUL_(N/2)+1wherei!=k^N x - x_i )
     std::vector<std::vector<GF>> precomputed_lagrange_polynomials_second =
-        precompute_lagrange_polynomials(x_values_second_half);
+        precompute_lagrange_polynomials(x_values, false);
+
     std::vector<GF> second_part = interpolate_with_precomputation(
         precomputed_lagrange_polynomials_second, y_values_second_half);
+
     // Multiplying the res second with numerator first half
     std::vector<GF> results_second(numerator_first_half.size() +
                                    second_part.size() - 1);
@@ -184,7 +275,7 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     // Adding results of A and B
     results_final = results_first + results_second;
 
-    std::cout << "results_final" << std::endl;
+    std::cout << "ROUND RESULT" << std::endl;
     for (size_t i = 0; i < results_final.size(); i++) {
       std::cout << results_final[i] << ",";
     }
@@ -229,6 +320,15 @@ template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point) {
 }
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n) {
+
+  // Can also do this
+  // std::vector<GF> result;
+  // result.reserve(n);
+  // for (size_t i = 0; i < n; i++) {
+  //   result.push_back(GF(i));
+  // }
+  // return result;
+
   std::vector<GF> result;
   result.reserve(n);
   GF x(2);
@@ -295,6 +395,9 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
 
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
+  template <typename GF>                                                       \
+  std::vector<std::vector<GF>> field::precompute_lagrange_polynomials(         \
+      const std::vector<GF> &x_values, bool firsthalf);                        \
   template std::vector<std::vector<TYPE>>                                      \
   field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
   template std::vector<TYPE> field::precompute_numerator_half(                 \
