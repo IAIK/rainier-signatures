@@ -108,10 +108,9 @@ std::vector<GF> interpolate_with_precomputation(
 }
 
 template <typename GF>
-std::vector<GF> precompute_numerator_half(const std::vector<GF> &x_values,
-                                          bool first_half) {
+std::vector<GF> precompute_numerator(const std::vector<GF> &x_values,
+                                     bool first_half) {
   size_t values_half_size = x_values.size() / 2;
-  std::vector<GF> numerator(values_half_size + 1);
   std::vector<GF> x_half(values_half_size);
   if (first_half) {
     for (size_t j = 0; j < values_half_size; ++j) {
@@ -143,9 +142,9 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
   size_t values_size = x_values.size();
   size_t values_half_size = values_size / 2;
 
-  std::vector<GF> numerator_first_half = precompute_numerator_half(
+  std::vector<GF> numerator_first_half = precompute_numerator(
       x_values, true); // Building first numerator MUL_(N/2)+1^N (x-x_i)
-  std::vector<GF> numerator_second_half = precompute_numerator_half(
+  std::vector<GF> numerator_second_half = precompute_numerator(
       x_values, false); // Building second numerator MUL_1^N/2 (x-x_i)
 
   std::vector<GF> x_values_first_half(values_half_size);
@@ -182,7 +181,7 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     std::cout << "FIRST RETURN - " << values_size << std::endl;
     std::vector<GF> results_first(interpolation_result_first.size() +
                                   numerator_second_half.size() - 1);
-    results_first += interpolation_result_first * numerator_second_half;
+    results_first += numerator_second_half * interpolation_result_first;
 
     std::cout << "numerator_second_half" << std::endl;
     for (size_t i = 0; i < numerator_second_half.size(); i++) {
@@ -208,7 +207,7 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     std::cout << "SECOND RETURN - " << values_size << std::endl;
     std::vector<GF> results_second(interpolation_result_second.size() +
                                    numerator_first_half.size() - 1);
-    results_second += interpolation_result_second * numerator_first_half;
+    results_second += numerator_first_half * interpolation_result_second;
 
     std::cout << "numerator_first_half" << std::endl;
     for (size_t i = 0; i < numerator_first_half.size(); i++) {
@@ -247,13 +246,37 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     std::vector<std::vector<GF>> precomputed_lagrange_polynomials_first =
         precompute_lagrange_polynomials(x_values, true);
 
+    std::cout << "y_values_first_half ELSE" << std::endl;
+    for (size_t i = 0; i < y_values_first_half.size(); i++) {
+      std::cout << y_values_first_half[i] << ",";
+    }
+    std::cout << std::endl;
+
     std::vector<GF> first_part = interpolate_with_precomputation(
         precomputed_lagrange_polynomials_first, y_values_first_half);
+
+    std::cout << "first_part ELSE" << std::endl;
+    for (size_t i = 0; i < first_part.size(); i++) {
+      std::cout << first_part[i] << ",";
+    }
+    std::cout << std::endl;
+
+    std::cout << "numerator_second_half ELSE" << std::endl;
+    for (size_t i = 0; i < numerator_second_half.size(); i++) {
+      std::cout << numerator_second_half[i] << ",";
+    }
+    std::cout << std::endl;
 
     // Multiplying the res first with the numerator second half
     std::vector<GF> results_first(numerator_second_half.size() +
                                   first_part.size() - 1);
     results_first = numerator_second_half * first_part;
+
+    std::cout << "results_first ELSE" << std::endl;
+    for (size_t i = 0; i < results_first.size(); i++) {
+      std::cout << results_first[i] << ",";
+    }
+    std::cout << std::endl;
 
     std::cout << "7" << std::endl;
 
@@ -261,13 +284,37 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     std::vector<std::vector<GF>> precomputed_lagrange_polynomials_second =
         precompute_lagrange_polynomials(x_values, false);
 
+    std::cout << "y_values_second_half ELSE" << std::endl;
+    for (size_t i = 0; i < y_values_second_half.size(); i++) {
+      std::cout << y_values_second_half[i] << ",";
+    }
+    std::cout << std::endl;
+
     std::vector<GF> second_part = interpolate_with_precomputation(
         precomputed_lagrange_polynomials_second, y_values_second_half);
+
+    std::cout << "second_part ELSE" << std::endl;
+    for (size_t i = 0; i < second_part.size(); i++) {
+      std::cout << second_part[i] << ",";
+    }
+    std::cout << std::endl;
+
+    std::cout << "numerator_first_half ELSE" << std::endl;
+    for (size_t i = 0; i < numerator_first_half.size(); i++) {
+      std::cout << numerator_first_half[i] << ",";
+    }
+    std::cout << std::endl;
 
     // Multiplying the res second with numerator first half
     std::vector<GF> results_second(numerator_first_half.size() +
                                    second_part.size() - 1);
     results_second = numerator_first_half * second_part;
+
+    std::cout << "results_second ELSE" << std::endl;
+    for (size_t i = 0; i < results_second.size(); i++) {
+      std::cout << results_second[i] << ",";
+    }
+    std::cout << std::endl;
 
     std::cout << "8" << std::endl;
 
@@ -275,12 +322,12 @@ std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
     // Adding results of A and B
     results_final = results_first + results_second;
 
-    std::cout << "ROUND RESULT" << std::endl;
+    std::cout << "ROUND RESULT ELSE" << std::endl;
     for (size_t i = 0; i < results_final.size(); i++) {
       std::cout << results_final[i] << ",";
     }
     std::cout << std::endl;
-    std::cout << "RETURN DEGREE - " << results_final.size() << std::endl;
+    std::cout << "RETURN DEGREE  ELSE - " << results_final.size() << std::endl;
     std::cout << "9" << std::endl;
 
     return results_final;
@@ -400,7 +447,7 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
       const std::vector<GF> &x_values, bool firsthalf);                        \
   template std::vector<std::vector<TYPE>>                                      \
   field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
-  template std::vector<TYPE> field::precompute_numerator_half(                 \
+  template std::vector<TYPE> field::precompute_numerator(                      \
       const std::vector<TYPE> &x_values, bool first_half);                     \
   template std::vector<TYPE> field::interpolate_with_seperation(               \
       const std::vector<TYPE> x_values, const std::vector<TYPE> y_values);     \

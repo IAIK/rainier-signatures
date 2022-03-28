@@ -499,18 +499,18 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
 
 TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
   std::vector<field::GF2_128> x =
-      field::get_first_n_field_elements<field::GF2_128>(4);
+      field::get_first_n_field_elements<field::GF2_128>(2);
   std::vector<field::GF2_128> y =
-      field::get_first_n_field_elements<field::GF2_128>(4);
+      field::get_first_n_field_elements<field::GF2_128>(2);
   std::vector<std::vector<field::GF2_128>> x_lag =
       field::precompute_lagrange_polynomials(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
   std::vector<field::GF2_128> x_fast =
-      field::get_first_n_field_elements<field::GF2_128>(4);
+      field::get_first_n_field_elements<field::GF2_128>(2);
   std::vector<field::GF2_128> y_fast =
-      field::get_first_n_field_elements<field::GF2_128>(4);
+      field::get_first_n_field_elements<field::GF2_128>(2);
   std::vector<field::GF2_128> result_fast =
       field::interpolate_with_seperation(x_fast, y_fast);
 

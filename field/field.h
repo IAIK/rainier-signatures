@@ -210,8 +210,8 @@ std::vector<GF> interpolate_with_precomputation(
     const std::vector<GF> &y_values);
 
 template <typename GF>
-std::vector<GF> precompute_numerator_half(const std::vector<GF> &x_values,
-                                          bool first_half);
+std::vector<GF> precompute_numerator(const std::vector<GF> &x_values,
+                                     bool first_half);
 
 template <typename GF>
 std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
