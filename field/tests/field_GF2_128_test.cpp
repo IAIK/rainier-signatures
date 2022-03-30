@@ -498,36 +498,55 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
 */
 
 TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
+
   std::vector<field::GF2_128> x =
-      field::get_first_n_field_elements<field::GF2_128>(2);
+      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
   std::vector<field::GF2_128> y =
-      field::get_first_n_field_elements<field::GF2_128>(2);
+      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
   std::vector<std::vector<field::GF2_128>> x_lag =
       field::precompute_lagrange_polynomials(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
+  BENCHMARK("SlOW INTERPOLATION") {
+    std::vector<std::vector<field::GF2_128>> x_lag =
+        field::precompute_lagrange_polynomials(x);
+    return field::interpolate_with_precomputation(x_lag, y);
+  };
+
   std::vector<field::GF2_128> x_fast =
-      field::get_first_n_field_elements<field::GF2_128>(2);
+      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
   std::vector<field::GF2_128> y_fast =
-      field::get_first_n_field_elements<field::GF2_128>(2);
-  std::vector<field::GF2_128> result_fast =
-      field::interpolate_with_seperation(x_fast, y_fast);
+      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
+  std::vector<std::vector<field::GF2_128>> precomputed_firsthalf(
+      field::ROOT_SIZE_HALF);
+  std::vector<std::vector<field::GF2_128>> precomputed_secondhalf(
+      field::ROOT_SIZE_HALF);
+  std::vector<field::GF2_128> precomputed_numerator_firsthalf(
+      field::ROOT_SIZE_HALF + 1);
+  std::vector<field::GF2_128> precomputed_numerator_secondhalf(
+      field::ROOT_SIZE_HALF + 1);
 
-  std::cout << "SLOW INTERP RESULT" << std::endl;
-  for (size_t i = 0; i < result.size(); i++) {
-    std::cout << result[i] << ",";
-  }
-  std::cout << std::endl;
+  field::write_precomputed_n_mul_d_inv_root_n_to_file(x_fast);
+  field::write_precomputed_numerator_to_file(x_fast);
 
-  std::cout << "FAST INTERP RESULT" << std::endl;
-  for (size_t i = 0; i < result_fast.size(); i++) {
-    std::cout << result_fast[i] << ",";
-  }
+  field::read_precomputed_n_mul_d_inv_root_n_from_file(precomputed_firsthalf,
+                                                       precomputed_secondhalf);
+  field::read_precomputed_numerator_from_file(precomputed_numerator_firsthalf,
+                                              precomputed_numerator_secondhalf);
+
+  std::vector<field::GF2_128> result_fast = field::interpolate_with_seperation(
+      y_fast, precomputed_firsthalf, precomputed_secondhalf,
+      precomputed_numerator_firsthalf, precomputed_numerator_secondhalf);
 
   REQUIRE(result.size() == result_fast.size());
-
   REQUIRE(result == result_fast);
+
+  BENCHMARK("FAST INTERPOLATION") {
+    return field::interpolate_with_seperation(
+        y_fast, precomputed_firsthalf, precomputed_secondhalf,
+        precomputed_numerator_firsthalf, precomputed_numerator_secondhalf);
+  };
 }
 
 /*

@@ -194,12 +194,27 @@ public:
                                       const field::GF2_256 &ele);
 };
 
-template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
+const size_t ROOT_SIZE = 128;
+const size_t ROOT_SIZE_HALF = ROOT_SIZE / 2;
 
 template <typename GF>
-std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values,
-                                bool firsthalf);
+void read_precomputed_n_mul_d_inv_root_n_from_file(
+    std::vector<std::vector<GF>> &precomputed_firsthalf,
+    std::vector<std::vector<GF>> &precomputed_secondhalf);
+
+template <typename GF>
+void read_precomputed_numerator_from_file(
+    std::vector<GF> &precomputed_numerator_firsthalf,
+    std::vector<GF> &precomputed_numerator_secondhalf);
+
+template <typename GF>
+void write_precomputed_n_mul_d_inv_root_n_to_file(
+    const std::vector<GF> &x_values);
+
+template <typename GF> void print_d_inv_root_n(const std::vector<GF> &x_values);
+
+template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
+
 template <typename GF>
 std::vector<std::vector<GF>>
 precompute_lagrange_polynomials(const std::vector<GF> &x_values);
@@ -210,12 +225,15 @@ std::vector<GF> interpolate_with_precomputation(
     const std::vector<GF> &y_values);
 
 template <typename GF>
-std::vector<GF> precompute_numerator(const std::vector<GF> &x_values,
-                                     bool first_half);
+void write_precomputed_numerator_to_file(const std::vector<GF> &x_values);
 
 template <typename GF>
-std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
-                                            std::vector<GF> y_values);
+std::vector<GF>
+interpolate_with_seperation(std::vector<GF> y_values,
+                            std::vector<std::vector<GF>> precomputed_firsthalf,
+                            std::vector<std::vector<GF>> precomputed_secondhalf,
+                            std::vector<GF> precomputed_numerator_firsthalf,
+                            std::vector<GF> precomputed_numerator_secondhalf);
 
 template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);
