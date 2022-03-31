@@ -1,6 +1,7 @@
 
 #include <array>
 #include <cmath>
+#include <complex>
 #include <cstring>
 #include <fstream>
 #include <iostream>
@@ -594,6 +595,74 @@ template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n) {
   return result;
 }
 
+// For storing complex values of nth roots
+// of unity we use complex<double>
+typedef std::complex<double> cd;
+const double PI = acos(-1);
+// Recursive function of FFT
+void fft(std::vector<cd> &a, bool is_inverse) {
+  int n = a.size();
+  // if input contains just one element
+  if (n == 1) {
+    return;
+  }
+
+  std::vector<cd> a_0(n / 2), a_1(n / 2);
+  for (int i = 0; i < n / 2; i++) {
+    // even indexed coefficients
+    a_0[i] = a[i * 2];
+    // odd indexed coefficients
+    a_1[i] = a[i * 2 + 1];
+  }
+  // Recursive call for even indexed coefficients
+  fft(a_0, is_inverse);
+  // Recursive call for odd indexed coefficients
+  fft(a_1, is_inverse);
+
+  // Complex nth roots of unity
+  double alpha = 2 * PI / n * (is_inverse ? -1 : 1);
+  cd w(1), wn(cos(alpha), sin(alpha));
+
+  // For storing values of y0, y1, y2, ..., yn-1.
+  std::vector<cd> y(n);
+  for (int k = 0; k < n / 2; k++) {
+    a[k] = a_0[k] + w * a_1[k];
+    a[k + n / 2] = a_0[k] - w * a_1[k];
+    if (is_inverse) {
+      a[k] /= 2;
+      a[k + n / 2] /= 2;
+    }
+    w *= wn;
+  }
+}
+
+void test_center(std::vector<cd> &a_fft, std::vector<cd> &b_fft) {
+
+  fft(a_fft, false); // coefficient to point-value representation
+  /* for (int i = 0; i < combined_size; i++) {
+    std::cout << a_fft[i] << ", r=" << a_fft[i].real()
+              << ",c=" << a_fft[i].imag() << std::endl;
+  } */
+  fft(b_fft, false); // coefficient to point-value representation
+  /* for (size_t i = 0; i < combined_size; i++) {
+    std::cout << b_fft[i] << ", r=" << b_fft[i].real()
+              << ",c=" << b_fft[i].imag() << std::endl;
+  } */
+
+  size_t combined_size = a_fft.size();
+  for (size_t i = 0; i < combined_size; i++) {
+    a_fft[i] *= b_fft[i]; // MUL using point-value representation
+  }
+
+  fft(a_fft, true); // Interpolate point-value to coeffficient representation
+
+  /* std::cout << "New Poly - ";
+  for (size_t i = 0; i < combined_size; i++) {
+    std::cout << round(a_fft[i].real()) << ","; // Result polynomial
+  }
+  std::cout << std::endl; */
+}
+
 } // namespace field
 
 template <typename GF>
@@ -648,6 +717,8 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
 }
 
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
+  void test_center(std::vector<field::cd> &a_fft,                              \
+                   std::vector<field::cd> &b_fft);                             \
   template void field::read_precomputed_numerator_from_file(                   \
       std::vector<TYPE> &precomputed_numerator_firsthalf,                      \
       std::vector<TYPE> &precomputed_numerator_secondhalf);                    \

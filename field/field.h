@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <complex>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -194,8 +195,11 @@ public:
                                       const field::GF2_256 &ele);
 };
 
-const size_t ROOT_SIZE = 128;
+const size_t ROOT_SIZE = 4096;
 const size_t ROOT_SIZE_HALF = ROOT_SIZE / 2;
+
+typedef std::complex<double> cd;
+void test_center(std::vector<cd> &a_fft, std::vector<cd> &b_fft);
 
 template <typename GF>
 void read_precomputed_n_mul_d_inv_root_n_from_file(
