@@ -199,24 +199,15 @@ const size_t ROOT_SIZE = 16;
 const size_t ROOT_SIZE_HALF = ROOT_SIZE / 2;
 
 template <typename GF>
-void read_precomputed_n_mul_d_inv_root_n_from_file(
-    std::vector<std::vector<GF>> &precomputed_firsthalf,
-    std::vector<std::vector<GF>> &precomputed_secondhalf);
+void read_precomputed_denominator_from_file(
+    std::vector<GF> &precomputed_denominator_firsthalf,
+    std::vector<GF> &precomputed_denominator_secondhalf);
 
 template <typename GF>
-void read_precomputed_numerator_from_file(
-    std::vector<GF> &precomputed_numerator_firsthalf,
-    std::vector<GF> &precomputed_numerator_secondhalf);
+void write_precomputed_denominator_to_file(const std::vector<GF> &x_values);
 
 template <typename GF>
-void read_precomputed_denominator_from_file(std::vector<GF> &denominator);
-
-template <typename GF>
-void write_precomputed_root_n_mul_d_inv_to_file(
-    const std::vector<GF> &x_values);
-
-template <typename GF>
-void write_d_inv_to_file(const std::vector<GF> &x_values);
+void write_precomputed_numerator_to_file(const std::vector<GF> &x_values);
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
 
@@ -230,16 +221,19 @@ std::vector<GF> interpolate_with_precomputation(
     const std::vector<GF> &y_values);
 
 template <typename GF>
-void write_precomputed_numerator_to_file(const std::vector<GF> &x_values);
+std::vector<GF>
+interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
+                                const std::vector<GF> &y_values,
+                                const size_t start_index,
+                                const size_t end_index);
 
 template <typename GF>
 std::vector<GF>
-interpolate_fast(std::vector<GF> y_values,
-                 std::vector<std::vector<GF>> precomputed_firsthalf,
-                 std::vector<std::vector<GF>> precomputed_secondhalf,
-                 std::vector<GF> precomputed_numerator_firsthalf,
-                 std::vector<GF> precomputed_numerator_secondhalf,
-                 std::vector<GF> denominator);
+interpolate_fast(const std::vector<GF> &x_values,
+                 const std::vector<GF> &y_values,
+                 const std::vector<GF> &precomputed_denominator_firsthalf,
+                 const std::vector<GF> &precomputed_denominator_secondhalf,
+                 const size_t start_index, const size_t end_index);
 
 template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);

@@ -507,51 +507,40 @@ TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
-  BENCHMARK("SlOW INTERPOLATION") {
+  /* BENCHMARK("SlOW INTERPOLATION") {
     std::vector<std::vector<field::GF2_128>> x_lag =
         field::precompute_lagrange_polynomials(x);
     return field::interpolate_with_precomputation(x_lag, y);
-  };
+  }; */
 
   std::vector<field::GF2_128> x_fast =
       field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
   std::vector<field::GF2_128> y_fast =
       field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
-  std::vector<std::vector<field::GF2_128>> precomputed_firsthalf(
-      field::ROOT_SIZE_HALF);
-  std::vector<std::vector<field::GF2_128>> precomputed_secondhalf(
-      field::ROOT_SIZE_HALF);
-  std::vector<field::GF2_128> precomputed_numerator_firsthalf(
-      field::ROOT_SIZE_HALF + 1);
-  std::vector<field::GF2_128> precomputed_numerator_secondhalf(
-      field::ROOT_SIZE_HALF + 1);
-  std::vector<field::GF2_128> denominator(x_fast.size());
+
+  std::vector<field::GF2_128> precomputed_denominator_firsthalf(x_fast.size() /
+                                                                2);
+  std::vector<field::GF2_128> precomputed_denominator_secondhalf(x_fast.size() /
+                                                                 2);
 
   // Precompute and write to file
-  field::write_precomputed_root_n_mul_d_inv_to_file(x_fast);
-  field::write_precomputed_numerator_to_file(x_fast);
-  field::write_d_inv_to_file(x_fast);
+  field::write_precomputed_denominator_to_file(x_fast);
 
   // Reading the precomputed part
-  field::read_precomputed_n_mul_d_inv_root_n_from_file(precomputed_firsthalf,
-                                                       precomputed_secondhalf);
-  field::read_precomputed_numerator_from_file(precomputed_numerator_firsthalf,
-                                              precomputed_numerator_secondhalf);
-  field::read_precomputed_denominator_from_file(denominator);
+  field::read_precomputed_denominator_from_file(
+      precomputed_denominator_firsthalf, precomputed_denominator_secondhalf);
 
   std::vector<field::GF2_128> result_fast = field::interpolate_fast(
-      y_fast, precomputed_firsthalf, precomputed_secondhalf,
-      precomputed_numerator_firsthalf, precomputed_numerator_secondhalf,
-      denominator);
+      x_fast, y_fast, precomputed_denominator_firsthalf,
+      precomputed_denominator_secondhalf, 0, x_fast.size() - 1);
 
   REQUIRE(result.size() == result_fast.size());
   REQUIRE(result == result_fast);
 
   BENCHMARK("FAST INTERPOLATION") {
     return field::interpolate_fast(
-        y_fast, precomputed_firsthalf, precomputed_secondhalf,
-        precomputed_numerator_firsthalf, precomputed_numerator_secondhalf,
-        denominator);
+        x_fast, y_fast, precomputed_denominator_firsthalf,
+        precomputed_denominator_secondhalf, 0, x_fast.size() - 1);
   };
 }
 
