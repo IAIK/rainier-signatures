@@ -9,7 +9,6 @@
 #include <NTL/GF2EX.h>
 
 /*
-
 TEST_CASE("Constructors for GF(2^128)", "[GF2_128]") {
   field::GF2_128 a;
   a.set_coeff(126);
@@ -495,10 +494,9 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
     return field::interpolate_with_precomputation(a_lag, a);
   };
 }
-
 */
 
-/* TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
+TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
 
   std::vector<field::GF2_128> x =
       field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
@@ -527,76 +525,34 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
       field::ROOT_SIZE_HALF + 1);
   std::vector<field::GF2_128> precomputed_numerator_secondhalf(
       field::ROOT_SIZE_HALF + 1);
+  std::vector<field::GF2_128> denominator(x_fast.size());
 
-  field::write_precomputed_n_mul_d_inv_root_n_to_file(x_fast);
+  // Precompute and write to file
+  field::write_precomputed_root_n_mul_d_inv_to_file(x_fast);
   field::write_precomputed_numerator_to_file(x_fast);
+  field::write_d_inv_to_file(x_fast);
 
+  // Reading the precomputed part
   field::read_precomputed_n_mul_d_inv_root_n_from_file(precomputed_firsthalf,
                                                        precomputed_secondhalf);
   field::read_precomputed_numerator_from_file(precomputed_numerator_firsthalf,
                                               precomputed_numerator_secondhalf);
+  field::read_precomputed_denominator_from_file(denominator);
 
-  std::vector<field::GF2_128> result_fast = field::interpolate_with_seperation(
+  std::vector<field::GF2_128> result_fast = field::interpolate_fast(
       y_fast, precomputed_firsthalf, precomputed_secondhalf,
-      precomputed_numerator_firsthalf, precomputed_numerator_secondhalf);
+      precomputed_numerator_firsthalf, precomputed_numerator_secondhalf,
+      denominator);
 
   REQUIRE(result.size() == result_fast.size());
   REQUIRE(result == result_fast);
 
   BENCHMARK("FAST INTERPOLATION") {
-    return field::interpolate_with_seperation(
+    return field::interpolate_fast(
         y_fast, precomputed_firsthalf, precomputed_secondhalf,
-        precomputed_numerator_firsthalf, precomputed_numerator_secondhalf);
+        precomputed_numerator_firsthalf, precomputed_numerator_secondhalf,
+        denominator);
   };
-} */
-
-TEST_CASE("TEST CENTER", "COMMON") {
-
-  std::vector<field::GF2_128> x;
-  std::vector<field::GF2_128> y;
-
-  x.reserve(field::ROOT_SIZE);
-  y.reserve(field::ROOT_SIZE);
-
-  for (size_t i = 0; i < field::ROOT_SIZE; i++) {
-    x.push_back(field::GF2_128(i + 1));
-    y.push_back(field::GF2_128(i + 1));
-  }
-
-  typedef std::complex<double> cd;
-  std::vector<cd> a_fft(x.size()); // These are the coefficients
-  std::vector<cd> b_fft(y.size()); // These are the coefficients
-
-  size_t val = 1;
-  for (size_t i = 0; i < x.size(); ++i) {
-    a_fft[i] = val;
-    b_fft[i] = val;
-    val++;
-  }
-
-  size_t combined_size = a_fft.size() + b_fft.size(); // Combined size after MUL
-  a_fft.resize(combined_size);
-  b_fft.resize(combined_size);
-
-  field::test_center(a_fft, b_fft);
-
-  std::vector<field::GF2_128> result = x * y;
-
-  /* std::cout << "a_fft size - " << a_fft.size() << std::endl;
-  for (size_t i = 0; i < combined_size; ++i) {
-    std::cout << round(a_fft[i].real()) << ",";
-  }
-  std::cout << std::endl;
-
-  std::cout << "result size - " << result.size() << std::endl;
-  for (size_t i = 0; i < result.size(); ++i) {
-    std::cout << result[i] << ",";
-  }
-  std::cout << std::endl; */
-
-  BENCHMARK("SLOW MULTIPLICATION") { return x * y; };
-
-  BENCHMARK("FAST MULTIPLICATION") { return field::test_center(a_fft, b_fft); };
 }
 
 /*

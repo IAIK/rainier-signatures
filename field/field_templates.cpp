@@ -10,6 +10,8 @@
 
 namespace field {
 
+// Reads the precomputed NUMERATOR * DENOMINATOR.INVERSE() (first/second halves)
+// from file
 template <typename GF>
 void read_precomputed_n_mul_d_inv_root_n_from_file(
     std::vector<std::vector<GF>> &precomputed_firsthalf,
@@ -32,7 +34,8 @@ void read_precomputed_n_mul_d_inv_root_n_from_file(
       }
     }
   } else {
-    throw std::runtime_error("Cannot open file to read precomputed data");
+    throw std::runtime_error(
+        "Cannot open file to read precomputed first-half data");
   }
   file_1.close();
 
@@ -53,11 +56,13 @@ void read_precomputed_n_mul_d_inv_root_n_from_file(
       }
     }
   } else {
-    throw std::runtime_error("Cannot open file to read precomputed data");
+    throw std::runtime_error(
+        "Cannot open file to read precomputed first-half data");
   }
   file_2.close();
 }
 
+// Reads the precomputed NUMERATOR (first/second halves) from file
 template <typename GF>
 void read_precomputed_numerator_from_file(
     std::vector<GF> &precomputed_numerator_firsthalf,
@@ -73,7 +78,8 @@ void read_precomputed_numerator_from_file(
       counter++;
     }
   } else {
-    throw std::runtime_error("Cannot open file to read precomputed data");
+    throw std::runtime_error(
+        "Cannot open file to read precomputed numerator data");
   }
   file_1.close();
 
@@ -87,15 +93,35 @@ void read_precomputed_numerator_from_file(
       counter++;
     }
   } else {
-    throw std::runtime_error("Cannot open file to read precomputed data");
+    throw std::runtime_error(
+        "Cannot open file to read precomputed numerator data");
   }
   file_2.close();
 }
 
-// debug + dev mode only
-// Use to precompute the constants of the NUMERATOR * DENOMINATOR.INVERSE
+// Reads the precomputed DENOMINATOR from file
 template <typename GF>
-void write_precomputed_n_mul_d_inv_root_n_to_file(
+void read_precomputed_denominator_from_file(std::vector<GF> &denominator) {
+  std::ifstream file;
+  file.open("precomputed_denominator_out.txt");
+  if (file.is_open()) {
+    std::string line;
+    size_t counter = 0;
+    while (std::getline(file, line)) {
+      denominator[counter] = GF(line);
+      counter++;
+    }
+  } else {
+    throw std::runtime_error(
+        "Cannot open file to read precomputed denominator data");
+  }
+  file.close();
+}
+
+// debug + dev mode only
+// Use to precompute the constants of the NUMERATOR * DENOMINATOR.INVERSE()
+template <typename GF>
+void write_precomputed_root_n_mul_d_inv_to_file(
     const std::vector<GF> &x_values) {
   // Check if value size is power of 2
   if (ceil(log2(x_values.size())) != floor(log2(x_values.size()))) {
@@ -107,8 +133,8 @@ void write_precomputed_n_mul_d_inv_root_n_to_file(
   size_t full_size = ROOT_SIZE;
   size_t half_size = ROOT_SIZE_HALF;
 
-  std::vector<GF> x_except_k;
   GF denominator;
+  std::vector<GF> x_except_k;
   for (size_t k = 0; k < half_size; k++) {
     denominator = GF(1);
     x_except_k.clear();
@@ -135,9 +161,8 @@ void write_precomputed_n_mul_d_inv_root_n_to_file(
   std::ofstream file_2;
   file_2.open("precomputation_constants_secondhalf_out.txt");
   std::vector<GF> x_except_k_;
-  GF denominator_;
   for (size_t k = half_size; k < full_size; k++) {
-    denominator_ = GF(1);
+    denominator = GF(1);
     x_except_k_.clear();
     x_except_k_.reserve(half_size - 1);
     for (size_t i_n = half_size; i_n < full_size; i_n++) {
@@ -147,11 +172,11 @@ void write_precomputed_n_mul_d_inv_root_n_to_file(
     }
     for (size_t i_d = 0; i_d < full_size; i_d++) {
       if (k != i_d) {
-        denominator_ *= x_values[k] - x_values[i_d];
+        denominator *= x_values[k] - x_values[i_d];
       }
     }
     std::vector<GF> numerator = build_from_roots(x_except_k_);
-    numerator = numerator * denominator_.inverse();
+    numerator = numerator * denominator.inverse();
 
     for (size_t i = 0; i < numerator.size(); i++) {
       file_2 << numerator[i] << std::endl;
@@ -199,9 +224,9 @@ void write_precomputed_numerator_to_file(const std::vector<GF> &x_values) {
 }
 
 // debug + dev mode only
-// Use to precompute the constants of the DENOMINATOR INVERSE
+// Use to precompute the constants of the DENOMINATOR.INVERSE()
 template <typename GF>
-void print_d_inv_root_n(const std::vector<GF> &x_values) {
+void write_d_inv_to_file(const std::vector<GF> &x_values) {
   // Check if value size is power of 2
   if (ceil(log2(x_values.size())) != floor(log2(x_values.size()))) {
     throw std::runtime_error("invalid sizes for interpolation");
@@ -212,39 +237,19 @@ void print_d_inv_root_n(const std::vector<GF> &x_values) {
   size_t values_size = x_values.size();
   size_t values_half_size = values_size / 2;
 
-  GF denominator_one;
-  file << "const std::string D_INV_FIRSTHALF_ROOT_" +
-              std::to_string(values_size) + "[" +
-              std::to_string(values_half_size) + "] = {"
-       << std::endl;
-  for (size_t k = 0; k < values_half_size; ++k) {
-    denominator_one = GF(1);
+  GF denominator;
+  for (size_t k = 0; k < values_size; ++k) {
+    denominator = GF(1);
     for (size_t i = 0; i < values_size; ++i) {
       if (i != k) {
-        denominator_one *= x_values[k] - x_values[i];
+        denominator *= x_values[k] - x_values[i];
       }
     }
-    file << "\"" << denominator_one.inverse() << "\"," << std::endl;
+    file << denominator.inverse() << std::endl;
   }
-  file << "};" << std::endl;
-
-  GF denominator_two;
-  file << "const std::string D_INV_SECONDHALF_ROOT_" +
-              std::to_string(values_size) + "[" +
-              std::to_string(values_half_size) + "] = {"
-       << std::endl;
-  for (size_t k = values_half_size; k < values_size; ++k) {
-    denominator_two = GF(1);
-    for (size_t i = 0; i < values_size; ++i) {
-      if (i != k) {
-        denominator_two *= x_values[k] - x_values[i];
-      }
-    }
-    file << "\"" << denominator_two.inverse() << "\"," << std::endl;
-  }
-  file << "};" << std::endl;
 }
 
+// Computing the precomputable part of the langrange interpolation
 template <typename GF>
 std::vector<std::vector<GF>>
 precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
@@ -272,6 +277,7 @@ precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
   return precomputed_lagrange_polynomials;
 }
 
+// Langrange interpolation with precomputation
 template <typename GF>
 std::vector<GF> interpolate_with_precomputation(
     const std::vector<std::vector<GF>> &precomputed_lagrange_polynomials,
@@ -288,13 +294,15 @@ std::vector<GF> interpolate_with_precomputation(
   return result;
 }
 
+// Fasting langrange interpolation using recurssive splitting in two parts
 template <typename GF>
 std::vector<GF>
-interpolate_with_seperation(std::vector<GF> y_values,
-                            std::vector<std::vector<GF>> precomputed_firsthalf,
-                            std::vector<std::vector<GF>> precomputed_secondhalf,
-                            std::vector<GF> precomputed_numerator_firsthalf,
-                            std::vector<GF> precomputed_numerator_secondhalf) {
+interpolate_fast(std::vector<GF> y_values,
+                 std::vector<std::vector<GF>> precomputed_firsthalf,
+                 std::vector<std::vector<GF>> precomputed_secondhalf,
+                 std::vector<GF> precomputed_numerator_firsthalf,
+                 std::vector<GF> precomputed_numerator_secondhalf,
+                 std::vector<GF> denominator) {
 
   // Check if value size is power of 2
   if (ceil(log2(y_values.size())) != floor(log2(y_values.size()))) {
@@ -331,216 +339,6 @@ interpolate_with_seperation(std::vector<GF> y_values,
 
   return results_final;
 }
-
-/*
-template <typename GF>
-std::vector<GF> interpolate_with_seperation(std::vector<GF> x_values,
-                                            std::vector<GF> y_values) {
-  if (x_values.size() != y_values.size() || y_values.empty() ||
-      x_values.empty())
-    throw std::runtime_error("invalid sizes for interpolation");
-
-  // Check if value size is power of 2
-  if (ceil(log2(x_values.size())) != floor(log2(x_values.size()))) {
-    throw std::runtime_error("invalid sizes for interpolation");
-  }
-  size_t values_size = x_values.size();
-  size_t values_half_size = values_size / 2;
-
-  std::vector<GF> numerator_first_half = precompute_numerator(
-      x_values, true); // Building first numerator MUL_(N/2)+1^N (x-x_i)
-  std::vector<GF> numerator_second_half = precompute_numerator(
-      x_values, false); // Building second numerator MUL_1^N/2 (x-x_i)
-
-  std::vector<GF> x_values_first_half(values_half_size);
-  for (size_t i = 0; i < values_half_size; ++i) {
-    x_values_first_half[i] = x_values[i]; // Getting first half of X values
-  }
-  std::vector<GF> y_values_first_half(values_half_size);
-  for (size_t i = 0; i < values_half_size; ++i) {
-    y_values_first_half[i] = y_values[i]; // Getting first half of Y values
-  }
-
-  std::vector<GF> x_values_second_half(values_half_size);
-  for (size_t i = 0; i < values_half_size; ++i) {
-    x_values_second_half[i] =
-        x_values[i + values_half_size]; // Getting second half of X values
-  }
-  std::vector<GF> y_values_second_half(values_half_size);
-  for (size_t i = 0; i < values_half_size; ++i) {
-    y_values_second_half[i] =
-        y_values[i + values_half_size]; // Getting first half of Y values
-  }
-
-  // std::cout << "INSIDE - " << values_size << std::endl;
-  // std::cout << "1" << std::endl;
-
-  // If x.size() != 2, we continue with recurssion
-  if (values_size != values_size) {
-
-    // std::cout << "2" << std::endl;
-
-    // Recurssion return will multiply with the MUL_(N/2)+1^N (x-x_i) part
-    std::vector<GF> interpolation_result_first =
-        interpolate_with_seperation(x_values_first_half, y_values_first_half);
-    // std::cout << "FIRST RETURN - " << values_size << std::endl;
-    std::vector<GF> results_first(interpolation_result_first.size() +
-                                  numerator_second_half.size() - 1);
-    results_first += numerator_second_half * interpolation_result_first;
-
-    // std::cout << "numerator_second_half" << std::endl;
-    for (size_t i = 0; i < numerator_second_half.size(); i++) {
-      // std::cout << numerator_second_half[i] << ",";
-    }
-    // std::cout << std::endl;
-    // std::cout << "interpolation_result_first" << std::endl;
-    for (size_t i = 0; i < interpolation_result_first.size(); i++) {
-      // std::cout << interpolation_result_first[i] << ",";
-    }
-    // std::cout << std::endl;
-    // std::cout << "results_first" << std::endl;
-    for (size_t i = 0; i < results_first.size(); i++) {
-      // std::cout << results_first[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "3" << std::endl;
-
-    // Recurssion return will multiply with the MUL_1^N/2 (x-x_i) part
-    std::vector<GF> interpolation_result_second =
-        interpolate_with_seperation(x_values_second_half,
-y_values_second_half);
-    // std::cout << "SECOND RETURN - " << values_size << std::endl;
-    std::vector<GF> results_second(interpolation_result_second.size() +
-                                   numerator_first_half.size() - 1);
-    results_second += numerator_first_half * interpolation_result_second;
-
-    // std::cout << "numerator_first_half" << std::endl;
-    for (size_t i = 0; i < numerator_first_half.size(); i++) {
-      // std::cout << numerator_first_half[i] << ",";
-    }
-    // std::cout << std::endl;
-    // std::cout << "interpolation_result_second" << std::endl;
-    for (size_t i = 0; i < interpolation_result_second.size(); i++) {
-      // std::cout << interpolation_result_second[i] << ",";
-    }
-    // std::cout << std::endl;
-    // std::cout << "results_second" << std::endl;
-    for (size_t i = 0; i < results_second.size(); i++) {
-      // std::cout << results_second[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "4" << std::endl;
-
-    std::vector<GF> results_final(results_first.size());
-    // Adding the result first and second
-    results_final = results_first + results_second;
-
-    // std::cout << "5" << std::endl;
-
-    // std::cout << "FINAL RESULT DEGREE - " << results_final.size() <<
-    // std::endl;
-    return results_final;
-
-  }
-  // If x.size() = 2 then we apply the fast algorithm
-  else {
-
-    // std::cout << "6" << std::endl;
-
-    // Building SUM_1^N/2 u_k * a_k * (MUL_1wherei!=k^(N/2) x - x_i )
-    std::vector<std::vector<GF>> precomputed_lagrange_polynomials_first =
-        precompute_lagrange_polynomials(x_values, true);
-
-    // std::cout << "y_values_first_half ELSE" << std::endl;
-    for (size_t i = 0; i < y_values_first_half.size(); i++) {
-      // std::cout << y_values_first_half[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    std::vector<GF> first_part = interpolate_with_precomputation(
-        precomputed_lagrange_polynomials_first, y_values_first_half);
-
-    // std::cout << "first_part ELSE" << std::endl;
-    for (size_t i = 0; i < first_part.size(); i++) {
-      // std::cout << first_part[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "numerator_second_half ELSE" << std::endl;
-    for (size_t i = 0; i < numerator_second_half.size(); i++) {
-      // std::cout << numerator_second_half[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // Multiplying the res first with the numerator second half
-    std::vector<GF> results_first(numerator_second_half.size() +
-                                  first_part.size() - 1);
-    results_first = numerator_second_half * first_part;
-
-    // std::cout << "results_first ELSE" << std::endl;
-    for (size_t i = 0; i < results_first.size(); i++) {
-      // std::cout << results_first[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "7" << std::endl;
-
-    // Building SUM_(N/2)+1^N u_k * a_k * (MUL_(N/2)+1wherei!=k^N x - x_i )
-    std::vector<std::vector<GF>> precomputed_lagrange_polynomials_second =
-        precompute_lagrange_polynomials(x_values, false);
-
-    // std::cout << "y_values_second_half ELSE" << std::endl;
-    for (size_t i = 0; i < y_values_second_half.size(); i++) {
-      // std::cout << y_values_second_half[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    std::vector<GF> second_part = interpolate_with_precomputation(
-        precomputed_lagrange_polynomials_second, y_values_second_half);
-
-    // std::cout << "second_part ELSE" << std::endl;
-    for (size_t i = 0; i < second_part.size(); i++) {
-      // std::cout << second_part[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "numerator_first_half ELSE" << std::endl;
-    for (size_t i = 0; i < numerator_first_half.size(); i++) {
-      // std::cout << numerator_first_half[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // Multiplying the res second with numerator first half
-    std::vector<GF> results_second(numerator_first_half.size() +
-                                   second_part.size() - 1);
-    results_second = numerator_first_half * second_part;
-
-    // std::cout << "results_second ELSE" << std::endl;
-    for (size_t i = 0; i < results_second.size(); i++) {
-      // std::cout << results_second[i] << ",";
-    }
-    // std::cout << std::endl;
-
-    // std::cout << "8" << std::endl;
-
-    std::vector<GF> results_final(results_first.size());
-    // Adding results of A and B
-    results_final = results_first + results_second;
-
-    // std::cout << "ROUND RESULT ELSE" << std::endl;
-    for (size_t i = 0; i < results_final.size(); i++) {
-      // std::cout << results_final[i] << ",";
-    }
-    // std::cout << std::endl;
-    // std::cout << "RETURN DEGREE  ELSE - " << results_final.size() <<
-    // std::endl; std::cout << "9" << std::endl;
-
-    return results_final;
-  }
-}
-*/
 
 template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots) {
@@ -593,74 +391,6 @@ template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n) {
     gen = gen * x;
   }
   return result;
-}
-
-// For storing complex values of nth roots
-// of unity we use complex<double>
-typedef std::complex<double> cd;
-const double PI = acos(-1);
-// Recursive function of FFT
-void fft(std::vector<cd> &a, bool is_inverse) {
-  int n = a.size();
-  // if input contains just one element
-  if (n == 1) {
-    return;
-  }
-
-  std::vector<cd> a_0(n / 2), a_1(n / 2);
-  for (int i = 0; i < n / 2; i++) {
-    // even indexed coefficients
-    a_0[i] = a[i * 2];
-    // odd indexed coefficients
-    a_1[i] = a[i * 2 + 1];
-  }
-  // Recursive call for even indexed coefficients
-  fft(a_0, is_inverse);
-  // Recursive call for odd indexed coefficients
-  fft(a_1, is_inverse);
-
-  // Complex nth roots of unity
-  double alpha = 2 * PI / n * (is_inverse ? -1 : 1);
-  cd w(1), wn(cos(alpha), sin(alpha));
-
-  // For storing values of y0, y1, y2, ..., yn-1.
-  std::vector<cd> y(n);
-  for (int k = 0; k < n / 2; k++) {
-    a[k] = a_0[k] + w * a_1[k];
-    a[k + n / 2] = a_0[k] - w * a_1[k];
-    if (is_inverse) {
-      a[k] /= 2;
-      a[k + n / 2] /= 2;
-    }
-    w *= wn;
-  }
-}
-
-void test_center(std::vector<cd> &a_fft, std::vector<cd> &b_fft) {
-
-  fft(a_fft, false); // coefficient to point-value representation
-  /* for (int i = 0; i < combined_size; i++) {
-    std::cout << a_fft[i] << ", r=" << a_fft[i].real()
-              << ",c=" << a_fft[i].imag() << std::endl;
-  } */
-  fft(b_fft, false); // coefficient to point-value representation
-  /* for (size_t i = 0; i < combined_size; i++) {
-    std::cout << b_fft[i] << ", r=" << b_fft[i].real()
-              << ",c=" << b_fft[i].imag() << std::endl;
-  } */
-
-  size_t combined_size = a_fft.size();
-  for (size_t i = 0; i < combined_size; i++) {
-    a_fft[i] *= b_fft[i]; // MUL using point-value representation
-  }
-
-  fft(a_fft, true); // Interpolate point-value to coeffficient representation
-
-  /* std::cout << "New Poly - ";
-  for (size_t i = 0; i < combined_size; i++) {
-    std::cout << round(a_fft[i].real()) << ","; // Result polynomial
-  }
-  std::cout << std::endl; */
 }
 
 } // namespace field
@@ -717,8 +447,8 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
 }
 
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
-  void test_center(std::vector<field::cd> &a_fft,                              \
-                   std::vector<field::cd> &b_fft);                             \
+  template void field::read_precomputed_denominator_from_file(                 \
+      std::vector<TYPE> &denominator);                                         \
   template void field::read_precomputed_numerator_from_file(                   \
       std::vector<TYPE> &precomputed_numerator_firsthalf,                      \
       std::vector<TYPE> &precomputed_numerator_secondhalf);                    \
@@ -728,17 +458,18 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
   template std::vector<std::vector<TYPE>>                                      \
   field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
-  template void field::print_d_inv_root_n(const std::vector<TYPE> &x_values);  \
-  template void field::write_precomputed_n_mul_d_inv_root_n_to_file(           \
+  template void field::write_d_inv_to_file(const std::vector<TYPE> &x_values); \
+  template void field::write_precomputed_root_n_mul_d_inv_to_file(             \
       const std::vector<TYPE> &x_values);                                      \
   template void field::write_precomputed_numerator_to_file(                    \
       const std::vector<TYPE> &x_values);                                      \
-  template std::vector<TYPE> field::interpolate_with_seperation(               \
+  template std::vector<TYPE> field::interpolate_fast(                          \
       const std::vector<TYPE> y_values,                                        \
       std::vector<std::vector<TYPE>> precomputed_firsthalf,                    \
       std::vector<std::vector<TYPE>> precomputed_secondhalf,                   \
       std::vector<TYPE> precomputed_numerator_firsthalf,                       \
-      std::vector<TYPE> precomputed_numerator_secondhalf);                     \
+      std::vector<TYPE> precomputed_numerator_secondhalf,                      \
+      std::vector<TYPE> denominator);                                          \
   template std::vector<TYPE> field::interpolate_with_precomputation(           \
       const std::vector<std::vector<TYPE>> &precomputed_lagrange_polynomials,  \
       const std::vector<TYPE> &y_values);                                      \
