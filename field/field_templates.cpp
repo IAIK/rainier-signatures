@@ -13,24 +13,14 @@ namespace field {
 // Reads the precomputed DENOMINATOR from file
 template <typename GF>
 void read_precomputed_denominator_from_file(
-    std::vector<GF> &precomputed_denominator_firsthalf,
-    std::vector<GF> &precomputed_denominator_secondhalf) {
+    std::vector<GF> &precomputed_denominator) {
   std::ifstream file;
   file.open("precomputed_denominator_out.txt");
   if (file.is_open()) {
     std::string line;
-    size_t first_half_index = 0;
-    size_t second_half_index = 0;
     size_t counter = 0;
-    size_t len_half = precomputed_denominator_firsthalf.size();
     while (std::getline(file, line)) {
-      if (counter < len_half) {
-        precomputed_denominator_firsthalf[first_half_index] = GF(line);
-        first_half_index++;
-      } else {
-        precomputed_denominator_secondhalf[second_half_index] = GF(line);
-        second_half_index++;
-      }
+      precomputed_denominator[counter] = GF(line);
       counter++;
     }
   } else {
@@ -43,7 +33,8 @@ void read_precomputed_denominator_from_file(
 // debug + dev mode only
 // Use to precompute the constants of the DENOMINATOR.INVERSE()
 template <typename GF>
-void write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
+std::vector<GF>
+write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
   // Check if value size is power of 2
   if (ceil(log2(x_values.size())) != floor(log2(x_values.size()))) {
     throw std::runtime_error("invalid sizes for interpolation");
@@ -53,6 +44,8 @@ void write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
 
   size_t values_size = x_values.size();
 
+  std::vector<GF> denominator_all;
+  denominator_all.reserve(values_size);
   GF denominator;
   for (size_t k = 0; k < values_size; ++k) {
     denominator = GF(1);
@@ -61,8 +54,10 @@ void write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
         denominator *= x_values[k] - x_values[i];
       }
     }
+    denominator_all.push_back(denominator);
     file << denominator.inverse() << std::endl;
   }
+  return denominator_all;
 }
 
 // Computing the precomputable part of the plain langrange interpolation
@@ -86,6 +81,7 @@ precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
       }
     }
     std::vector<GF> numerator = build_from_roots(x_except_k);
+
     numerator = numerator * denominator.inverse();
     precomputed_lagrange_polynomials.push_back(numerator);
   }
@@ -102,12 +98,12 @@ std::vector<GF> interpolate_with_precomputation(
       y_values.empty())
     throw std::runtime_error("invalid sizes for interpolation");
 
-  std::vector<GF> result(precomputed_lagrange_polynomials[0].size());
+  std::vector<GF> res(precomputed_lagrange_polynomials[0].size());
   size_t m = y_values.size();
   for (size_t k = 0; k < m; k++) {
-    result += precomputed_lagrange_polynomials[k] * y_values[k];
+    res += precomputed_lagrange_polynomials[k] * y_values[k];
   }
-  return result;
+  return res;
 }
 
 // Fast langrange interpolation with precomputation
@@ -117,46 +113,48 @@ interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
                                 const std::vector<GF> &y_values,
                                 const size_t index) {
 
-  std::vector<GF> result(precomputed_denominator.size());
-  result += y_values[index] * precomputed_denominator;
+  std::vector<GF> a_precomputed_denominator;
+  a_precomputed_denominator.reserve(1);
+  a_precomputed_denominator.push_back(precomputed_denominator[index]);
 
-  return result;
+  return y_values[index] * a_precomputed_denominator;
 }
 
 // Fast langrange interpolation using recurssion
 template <typename GF>
-std::vector<GF>
-interpolate_fast(const std::vector<GF> &x_values,
-                 const std::vector<GF> &y_values,
-                 const std::vector<GF> &precomputed_denominator_firsthalf,
-                 const std::vector<GF> &precomputed_denominator_secondhalf,
-                 const size_t start_index, const size_t end_index) {
+std::vector<GF> interpolate_fast(const std::vector<GF> &x_values,
+                                 const std::vector<GF> &y_values,
+                                 const std::vector<GF> &precomputed_denominator,
+                                 const size_t start_index,
+                                 const size_t length) {
 
-  // Check if value size is power of 2
-  if (ceil(log2(y_values.size())) != floor(log2(y_values.size()))) {
-    throw std::runtime_error("invalid sizes for interpolation");
-  }
-
-  size_t len = end_index - start_index + 1;
-  size_t len_half = len / 2;
-
-  std::cout << len << std::endl;
-  std::cout << start_index << " " << end_index << std::endl;
+  const size_t len_half = length / 2;
+  const size_t end_index = start_index + length - 1;
+  const size_t first_half_end_index = start_index + len_half - 1;
+  const size_t second_half_start_index = start_index + len_half;
 
   // The recurssion part !!
-  if (len != 2) {
+  if (length != 2) {
 
-    std::vector<GF> res1 =
-        interpolate_fast(x_values, y_values, precomputed_denominator_firsthalf,
-                         precomputed_denominator_secondhalf, start_index,
-                         (size_t)floor(end_index / 2));
+    std::vector<GF> x_first_half_root, x_second_half_root;
+    x_first_half_root.reserve(len_half);
+    for (size_t i = start_index; i <= first_half_end_index; i++) {
+      x_first_half_root.push_back(x_values[i]);
+    }
 
-    std::vector<GF> res2 =
-        interpolate_fast(x_values, y_values, precomputed_denominator_firsthalf,
-                         precomputed_denominator_secondhalf,
-                         (size_t)ceil(end_index / 2), end_index);
+    x_second_half_root.reserve(len_half);
+    for (size_t i = second_half_start_index; i <= end_index; i++) {
+      x_second_half_root.push_back(x_values[i]);
+    }
+    std::vector<GF> x_first_half_poly = build_from_roots(x_first_half_root);
+    std::vector<GF> x_second_half_poly = build_from_roots(x_second_half_root);
 
-    return res1 + res2;
+    return (x_second_half_poly * interpolate_fast(x_values, y_values,
+                                                  precomputed_denominator,
+                                                  start_index, len_half)) +
+           (x_first_half_poly *
+            interpolate_fast(x_values, y_values, precomputed_denominator,
+                             second_half_start_index, len_half));
   }
 
   std::vector<GF> x_first_half_roots;
@@ -169,30 +167,12 @@ interpolate_fast(const std::vector<GF> &x_values,
   x_second_half_roots.push_back(x_values[end_index]);
   std::vector<GF> x_second_half_poly = build_from_roots(x_second_half_roots);
 
-  std::cout << " - " << std::dec << x_first_half_poly.size() << std::endl;
-  std::cout << " - " << std::dec << x_second_half_poly.size() << std::endl;
-
-  throw std::runtime_error("STOP");
-
-  // Building SUM_1^N/2 u_k * a_k * (MUL_1wherei!=k^(N/2) x - x_i )
-  std::vector<GF> first_part = interpolate_with_precomputation(
-      precomputed_denominator_firsthalf, y_values, start_index);
-  // Multiplying the res first with the numerator second half
-  std::vector<GF> results_first(len_half + first_part.size() - 1);
-  results_first = x_second_half_poly * first_part;
-
-  // Building SUM_(N/2)+1^N u_k * a_k * (MUL_(N/2)+1wherei!=k^N x - x_i )
-  std::vector<GF> second_part = interpolate_with_precomputation(
-      precomputed_denominator_secondhalf, y_values, end_index);
-  // Multiplying the res second with numerator first half
-  std::vector<GF> results_second(len_half + second_part.size() - 1);
-  results_second = x_first_half_poly * second_part;
-
-  std::vector<GF> results_final(results_first.size());
-  // Adding results of A and B
-  results_final = results_first + results_second;
-
-  return results_final;
+  return (x_second_half_poly *
+          interpolate_with_precomputation(precomputed_denominator, y_values,
+                                          start_index)) +
+         (x_first_half_poly *
+          interpolate_with_precomputation(precomputed_denominator, y_values,
+                                          end_index));
 }
 
 template <typename GF>
@@ -228,15 +208,6 @@ template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point) {
 }
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n) {
-
-  // Can also do this
-  // std::vector<GF> result;
-  // result.reserve(n);
-  // for (size_t i = 0; i < n; i++) {
-  //   result.push_back(GF(i));
-  // }
-  // return result;
-
   std::vector<GF> result;
   result.reserve(n);
   GF x(2);
@@ -303,18 +274,16 @@ std::vector<GF> operator*(const std::vector<GF> &lhs,
 
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
   template void field::read_precomputed_denominator_from_file(                 \
-      std::vector<TYPE> &precomputed_denominator_firsthalf,                    \
-      std::vector<TYPE> &precomputed_denominator_secondhalf);                  \
+      std::vector<TYPE> &precomputed_denominator);                             \
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
   template std::vector<std::vector<TYPE>>                                      \
   field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
-  template void field::write_precomputed_denominator_to_file(                  \
+  template std::vector<TYPE> field::write_precomputed_denominator_to_file(     \
       const std::vector<TYPE> &x_values);                                      \
   template std::vector<TYPE> field::interpolate_fast(                          \
       const std::vector<TYPE> &x_values, const std::vector<TYPE> &y_values,    \
-      const std::vector<TYPE> &precomputed_denominator_firsthalf,              \
-      const std::vector<TYPE> &precomputed_denominator_secondhalf,             \
-      const size_t start_index, const size_t end_index);                       \
+      const std::vector<TYPE> &precomputed_denominator,                        \
+      const size_t start_index, const size_t length);                          \
   template std::vector<TYPE> field::interpolate_with_precomputation(           \
       const std::vector<std::vector<TYPE>> &precomputed_lagrange_polynomials,  \
       const std::vector<TYPE> &y_values);                                      \

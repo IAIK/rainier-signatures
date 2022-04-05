@@ -494,54 +494,113 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
     return field::interpolate_with_precomputation(a_lag, a);
   };
 }
+
 */
 
-TEST_CASE("Fast interpolation GF(2^128)", "[GF2_128]") {
+/* TEST_CASE("Fast interpolation with/without preprocessing GF(2^128)",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
 
   std::vector<field::GF2_128> x =
-      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y =
-      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<std::vector<field::GF2_128>> x_lag =
       field::precompute_lagrange_polynomials(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
-  /* BENCHMARK("SlOW INTERPOLATION") {
-    std::vector<std::vector<field::GF2_128>> x_lag =
-        field::precompute_lagrange_polynomials(x);
-    return field::interpolate_with_precomputation(x_lag, y);
-  }; */
-
   std::vector<field::GF2_128> x_fast =
-      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y_fast =
-      field::get_first_n_field_elements<field::GF2_128>(field::ROOT_SIZE);
-
-  std::vector<field::GF2_128> precomputed_denominator_firsthalf(x_fast.size() /
-                                                                2);
-  std::vector<field::GF2_128> precomputed_denominator_secondhalf(x_fast.size() /
-                                                                 2);
-
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  size_t x_len = x_fast.size();
   // Precompute and write to file
-  field::write_precomputed_denominator_to_file(x_fast);
-
+  std::vector<field::GF2_128> precom_deno =
+      field::write_precomputed_denominator_to_file(x_fast);
   // Reading the precomputed part
-  field::read_precomputed_denominator_from_file(
-      precomputed_denominator_firsthalf, precomputed_denominator_secondhalf);
+  // std::vector<field::GF2_128> precomputed_denominator(x_fast.size());
+  // field::read_precomputed_denominator_from_file(precomputed_denominator);
 
-  std::vector<field::GF2_128> result_fast = field::interpolate_fast(
-      x_fast, y_fast, precomputed_denominator_firsthalf,
-      precomputed_denominator_secondhalf, 0, x_fast.size() - 1);
+  std::vector<field::GF2_128> result_fast =
+      field::interpolate_fast(x_fast, y_fast, precom_deno, 0, x_len);
 
   REQUIRE(result.size() == result_fast.size());
   REQUIRE(result == result_fast);
+} */
 
-  BENCHMARK("FAST INTERPOLATION") {
-    return field::interpolate_fast(
-        x_fast, y_fast, precomputed_denominator_firsthalf,
-        precomputed_denominator_secondhalf, 0, x_fast.size() - 1);
-  };
+TEST_CASE(
+    "Slow interpolation with/without preprocessing GF(2^128) (BENCH ONLY)",
+    "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 4096;
+
+  std::vector<field::GF2_128> x =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+
+  auto start_prep = std::chrono::system_clock::now();
+  std::vector<std::vector<field::GF2_128>> x_lag =
+      field::precompute_lagrange_polynomials(x);
+
+  auto total_prep = std::chrono::system_clock::now() - start_prep;
+  std::cout << "Slow Time Take to precomp - "
+            << total_prep / std::chrono::seconds(1) << "s" << std::endl;
+
+  auto start = std::chrono::system_clock::now();
+  field::interpolate_with_precomputation(x_lag, y);
+
+  auto total = std::chrono::system_clock::now() - start;
+  std::cout << "Slow Time Take - " << total / std::chrono::milliseconds(1)
+            << "ms" << std::endl;
+
+  // BENCHMARK("SlOW INTERP W/O PREPROCESSING") {
+  //   std::vector<std::vector<field::GF2_128>> x_lag =
+  //       field::precompute_lagrange_polynomials(x);
+  //   return field::interpolate_with_precomputation(x_lag, y);
+  // };
+
+  // BENCHMARK("SlOW INTERP WITH PREPROCESSING") {
+  //   return field::interpolate_with_precomputation(x_lag, y);
+  // };
+}
+
+TEST_CASE(
+    "Fast interpolation with/without preprocessing GF(2^128) (BENCH ONLY)",
+    "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 4096;
+
+  std::vector<field::GF2_128> x_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  size_t x_len = x_fast.size();
+
+  auto start_prep = std::chrono::system_clock::now();
+  // Precompute and write to file
+  std::vector<field::GF2_128> precom_deno =
+      field::write_precomputed_denominator_to_file(x_fast);
+  // Reading the precomputed part
+  // std::vector<field::GF2_128> precomputed_denominator(x_fast.size());
+  // field::read_precomputed_denominator_from_file(precomputed_denominator);
+
+  auto total_prep = std::chrono::system_clock::now() - start_prep;
+  std::cout << "Fast Time Take to precomp - "
+            << total_prep / std::chrono::milliseconds(1) << "ms" << std::endl;
+
+  auto start = std::chrono::system_clock::now();
+  field::interpolate_fast(x_fast, y_fast, precom_deno, 0, x_len);
+
+  auto total = std::chrono::system_clock::now() - start;
+  std::cout << "Fast Time Take - " << total / std::chrono::milliseconds(1)
+            << "ms" << std::endl;
+
+  // BENCHMARK("FAST INTERP WITH PREPROCESSING") {
+  //   return field::interpolate_fast(x_fast, y_fast, precom_deno, 0, x_len);
+  // };
 }
 
 /*
