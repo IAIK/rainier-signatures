@@ -197,14 +197,19 @@ public:
 
 template <typename GF>
 void read_precomputed_denominator_from_file(
-    std::vector<GF> &precomputed_denominator);
+    std::vector<GF> &precomputed_denominator, size_t x_len);
 
 template <typename GF>
-std::vector<GF>
-write_precomputed_denominator_to_file(const std::vector<GF> &x_values);
+void read_precomputed_x_minus_xi_to_file(
+    std::vector<std::vector<GF>> &precomputed_x_minus_xi,
+    const size_t root_count, std::ifstream &file);
 
 template <typename GF>
-void write_precomputed_numerator_to_file(const std::vector<GF> &x_values);
+void write_precomputed_denominator_to_file(const std::vector<GF> &x_values);
+
+template <typename GF>
+void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
+                                          std::ofstream &file);
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
 
@@ -225,10 +230,12 @@ interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
                                 const size_t end_index);
 
 template <typename GF>
-std::vector<GF> interpolate_fast(const std::vector<GF> &x_values,
-                                 const std::vector<GF> &y_values,
-                                 const std::vector<GF> &precomputed_denominator,
-                                 const size_t start_index, const size_t length);
+std::vector<GF> interpolate_fast(
+    const std::vector<GF> &x_values, const std::vector<GF> &y_values,
+    const std::vector<GF> &precomputed_denominator,
+    const std::vector<std::vector<GF>> &precomputed_x_minus_xi,
+    const size_t x_start_index, const size_t x_length,
+    const size_t x_minus_xi_first_index, const size_t x_minus_xi_length);
 
 template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);
@@ -249,3 +256,5 @@ std::vector<GF> operator*(const GF &lhs, const std::vector<GF> &rhs);
 template <typename GF>
 std::vector<GF> operator*(const std::vector<GF> &lhs,
                           const std::vector<GF> &rhs);
+template <typename GF>
+std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs);
