@@ -231,20 +231,10 @@ std::vector<GF> interpolate_fast(
                              x_minus_xi_half_length - 1));
   }
 
-  std::vector<GF> x_first_half_roots;
-  x_first_half_roots.reserve(x_len_half);
-  x_first_half_roots.push_back(x_values[x_start_index]);
-  std::vector<GF> x_first_half_poly = build_from_roots(x_first_half_roots);
-
-  std::vector<GF> x_second_half_roots;
-  x_second_half_roots.reserve(x_len_half);
-  x_second_half_roots.push_back(x_values[x_end_index]);
-  std::vector<GF> x_second_half_poly = build_from_roots(x_second_half_roots);
-
-  return (x_second_half_poly *
+  return (precomputed_x_minus_xi[x_minus_xi_second_index] *
           interpolate_with_precomputation(precomputed_denominator, y_values,
                                           x_start_index)) +
-         (x_first_half_poly *
+         (precomputed_x_minus_xi[x_minus_xi_first_index] *
           interpolate_with_precomputation(precomputed_denominator, y_values,
                                           x_end_index));
 }

@@ -582,7 +582,7 @@ TEST_CASE(
     "Fast interpolation with/without preprocessing GF(2^128) (BENCH ONLY)",
     "[GF2_128]") {
 
-  constexpr size_t ROOT_SIZE = 8192;
+  constexpr size_t ROOT_SIZE = 32768;
 
   std::vector<field::GF2_128> x_fast =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
