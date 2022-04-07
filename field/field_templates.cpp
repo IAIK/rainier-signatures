@@ -32,7 +32,7 @@ void read_precomputed_denominator_from_file(
 
 // Read the precomputed x - xi
 template <typename GF>
-void read_precomputed_x_minus_xi_to_file(
+void read_precomputed_x_minus_xi_poly_splits_to_file(
     std::vector<std::vector<GF>> &precomputed_x_minus_xi,
     const size_t root_count, std::ifstream &file) {
 
@@ -78,9 +78,9 @@ void write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
   file.open("precomputed_denominator_out.txt");
 
   size_t values_size = x_values.size();
-
   GF denominator;
   for (size_t k = 0; k < values_size; ++k) {
+
     denominator = GF(1);
     for (size_t i = 0; i < values_size; ++i) {
       if (i != k) {
@@ -94,8 +94,8 @@ void write_precomputed_denominator_to_file(const std::vector<GF> &x_values) {
 // debug + dev mode only
 // Use to precompute x - xi recurssively
 template <typename GF>
-void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
-                                          std::ofstream &file) {
+void write_precomputed_x_minus_xi_poly_splits_to_file(
+    const std::vector<GF> &x_values, std::ofstream &file) {
   size_t len = x_values.size();
   if (len == 1) {
     return;
@@ -117,7 +117,7 @@ void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
   }
   file << std::endl;
   // Recurssion with the first half roots
-  write_precomputed_x_minus_xi_to_file(x_first_half_roots, file);
+  write_precomputed_x_minus_xi_poly_splits_to_file(x_first_half_roots, file);
 
   // Gets the second half roots
   std::vector<GF> x_second_half_roots;
@@ -134,51 +134,61 @@ void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
   }
   file << std::endl;
   // Recurssion with the second half roots
-  write_precomputed_x_minus_xi_to_file(x_second_half_roots, file);
+  write_precomputed_x_minus_xi_poly_splits_to_file(x_second_half_roots, file);
 }
 
 // Computing the precomputable part of the plain langrange interpolation
+// (NOT-OPTMIZED)
 template <typename GF>
 std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values,
-                                const std::vector<GF> x_minus_xi,
-                                const std::vector<GF> precomputed_denominator) {
+precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
   size_t m = x_values.size();
   std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
   precomputed_lagrange_polynomials.reserve(m);
 
-  // std::vector<GF> x_except_k;
-  // GF denominator;
+  std::vector<GF> x_except_k;
+  GF denominator;
   for (size_t k = 0; k < m; k++) {
+    denominator = GF(1);
+    x_except_k.clear();
+    x_except_k.reserve(m - 1);
+    for (size_t j = 0; j < m; j++) {
+      if (k != j) {
+        denominator *= x_values[k] - x_values[j];
+        x_except_k.push_back(x_values[j]);
+      }
+    }
+    std::vector<GF> numerator = build_from_roots(x_except_k);
 
-    std::vector<GF> a_precomputed_denominator;
-    a_precomputed_denominator.reserve(1);
-    a_precomputed_denominator.push_back(precomputed_denominator[k]);
-
-    // denominator = GF(1);
-    // x_except_k.clear();
-    // x_except_k.reserve(m - 1);
-    // for (size_t j = 0; j < m; j++) {
-    //   if (k != j) {
-    //     denominator *= x_values[k] - x_values[j];
-    //     x_except_k.push_back(x_values[j]);
-    //   }
-    // }
-    // std::vector<GF> numerator = build_from_roots(x_except_k);
-
-    std::vector<GF> x_k;
-    x_k.reserve(1);
-    x_k.push_back(x_values[k]);
-    std::vector<GF> numerator = x_minus_xi / build_from_roots(x_k)[0];
-
-    numerator = a_precomputed_denominator * numerator;
+    numerator = numerator * denominator.inverse();
     precomputed_lagrange_polynomials.push_back(numerator);
   }
 
   return precomputed_lagrange_polynomials;
 }
 
-// Langrange interpolation with precomputation
+// Computing the precomputable part of the plain langrange interpolation
+// (OPTIMIZED)
+template <typename GF>
+std::vector<std::vector<GF>>
+precompute_lagrange_polynomials(const std::vector<GF> &x_values,
+                                const std::vector<GF> x_minus_xi) {
+  size_t m = x_values.size();
+  std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
+  precomputed_lagrange_polynomials.reserve(m);
+
+  for (size_t k = 0; k < m; k++) {
+
+    std::vector<GF> numerator = x_minus_xi / x_values[k];
+
+    numerator = eval(numerator, x_values[k]).inverse() * numerator;
+    precomputed_lagrange_polynomials.push_back(numerator);
+  }
+
+  return precomputed_lagrange_polynomials;
+}
+
+// Langrange interpolation with precomputation ("SLOW")
 template <typename GF>
 std::vector<GF> interpolate_with_precomputation(
     const std::vector<std::vector<GF>> &precomputed_lagrange_polynomials,
@@ -195,7 +205,7 @@ std::vector<GF> interpolate_with_precomputation(
   return res;
 }
 
-// Fast langrange interpolation with precomputation
+// Langrange interpolation with precomputation ("FAST")
 template <typename GF>
 std::vector<GF>
 interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
@@ -209,10 +219,10 @@ interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
   return y_values[index] * a_precomputed_denominator;
 }
 
-// Fast langrange interpolation using recurssion
+// Langrange interpolation using recurssion ("FAST")
 template <typename GF>
-std::vector<GF> interpolate_fast(
-    const std::vector<GF> &x_values, const std::vector<GF> &y_values,
+std::vector<GF> interpolate_with_recurrsion(
+    const std::vector<GF> &y_values,
     const std::vector<GF> &precomputed_denominator,
     const std::vector<std::vector<GF>> &precomputed_x_minus_xi,
     const size_t x_start_index, const size_t x_length,
@@ -232,15 +242,15 @@ std::vector<GF> interpolate_fast(
   if (x_length != 2) {
 
     return (precomputed_x_minus_xi[x_minus_xi_second_index] *
-            interpolate_fast(x_values, y_values, precomputed_denominator,
-                             precomputed_x_minus_xi, x_start_index, x_len_half,
-                             x_minus_xi_first_index + 1,
-                             x_minus_xi_half_length - 1)) +
+            interpolate_with_recurrsion(y_values, precomputed_denominator,
+                                        precomputed_x_minus_xi, x_start_index,
+                                        x_len_half, x_minus_xi_first_index + 1,
+                                        x_minus_xi_half_length - 1)) +
            (precomputed_x_minus_xi[x_minus_xi_first_index] *
-            interpolate_fast(x_values, y_values, precomputed_denominator,
-                             precomputed_x_minus_xi, x_second_half_start_index,
-                             x_len_half, x_minus_xi_second_index + 1,
-                             x_minus_xi_half_length - 1));
+            interpolate_with_recurrsion(
+                y_values, precomputed_denominator, precomputed_x_minus_xi,
+                x_second_half_start_index, x_len_half,
+                x_minus_xi_second_index + 1, x_minus_xi_half_length - 1));
   }
 
   return (precomputed_x_minus_xi[x_minus_xi_second_index] *
@@ -369,20 +379,21 @@ std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs) {
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
   template void field::read_precomputed_denominator_from_file(                 \
       std::vector<TYPE> &precomputed_denominator, size_t x_len);               \
-  template void field::read_precomputed_x_minus_xi_to_file(                    \
+  template void field::read_precomputed_x_minus_xi_poly_splits_to_file(        \
       std::vector<std::vector<TYPE>> &precomputed_x_minus_xi,                  \
       const size_t root_count, std::ifstream &file);                           \
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
   template std::vector<std::vector<TYPE>>                                      \
-  field::precompute_lagrange_polynomials(                                      \
-      const std::vector<TYPE> &x_values, const std::vector<TYPE> x_minus_xi,   \
-      const std::vector<TYPE> precomputed_denominator);                        \
+  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
+  template std::vector<std::vector<TYPE>>                                      \
+  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values,    \
+                                         const std::vector<TYPE> x_minus_xi);  \
   template void field::write_precomputed_denominator_to_file(                  \
       const std::vector<TYPE> &x_values);                                      \
-  template void field::write_precomputed_x_minus_xi_to_file(                   \
+  template void field::write_precomputed_x_minus_xi_poly_splits_to_file(       \
       const std::vector<TYPE> &x_values, std::ofstream &file);                 \
-  template std::vector<TYPE> field::interpolate_fast(                          \
-      const std::vector<TYPE> &x_values, const std::vector<TYPE> &y_values,    \
+  template std::vector<TYPE> field::interpolate_with_recurrsion(               \
+      const std::vector<TYPE> &y_values,                                       \
       const std::vector<TYPE> &precomputed_denominator,                        \
       const std::vector<std::vector<TYPE>> &precomputed_x_minus_xi,            \
       const size_t start_index, const size_t length,                           \

@@ -200,7 +200,7 @@ void read_precomputed_denominator_from_file(
     std::vector<GF> &precomputed_denominator, size_t x_len);
 
 template <typename GF>
-void read_precomputed_x_minus_xi_to_file(
+void read_precomputed_x_minus_xi_poly_splits_to_file(
     std::vector<std::vector<GF>> &precomputed_x_minus_xi,
     const size_t root_count, std::ifstream &file);
 
@@ -208,16 +208,19 @@ template <typename GF>
 void write_precomputed_denominator_to_file(const std::vector<GF> &x_values);
 
 template <typename GF>
-void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
-                                          std::ofstream &file);
+void write_precomputed_x_minus_xi_poly_splits_to_file(
+    const std::vector<GF> &x_values, std::ofstream &file);
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
 
 template <typename GF>
 std::vector<std::vector<GF>>
+precompute_lagrange_polynomials(const std::vector<GF> &x_values);
+
+template <typename GF>
+std::vector<std::vector<GF>>
 precompute_lagrange_polynomials(const std::vector<GF> &x_values,
-                                const std::vector<GF> x_minus_xi,
-                                const std::vector<GF> precomputed_denominator);
+                                const std::vector<GF> x_minus_xi);
 
 template <typename GF>
 std::vector<GF> interpolate_with_precomputation(
@@ -232,8 +235,8 @@ interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
                                 const size_t end_index);
 
 template <typename GF>
-std::vector<GF> interpolate_fast(
-    const std::vector<GF> &x_values, const std::vector<GF> &y_values,
+std::vector<GF> interpolate_with_recurrsion(
+    const std::vector<GF> &y_values,
     const std::vector<GF> &precomputed_denominator,
     const std::vector<std::vector<GF>> &precomputed_x_minus_xi,
     const size_t x_start_index, const size_t x_length,
