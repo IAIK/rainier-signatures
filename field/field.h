@@ -215,7 +215,9 @@ template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
 
 template <typename GF>
 std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values);
+precompute_lagrange_polynomials(const std::vector<GF> &x_values,
+                                const std::vector<GF> x_minus_xi,
+                                const std::vector<GF> precomputed_denominator);
 
 template <typename GF>
 std::vector<GF> interpolate_with_precomputation(

@@ -140,26 +140,38 @@ void write_precomputed_x_minus_xi_to_file(const std::vector<GF> &x_values,
 // Computing the precomputable part of the plain langrange interpolation
 template <typename GF>
 std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
+precompute_lagrange_polynomials(const std::vector<GF> &x_values,
+                                const std::vector<GF> x_minus_xi,
+                                const std::vector<GF> precomputed_denominator) {
   size_t m = x_values.size();
   std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
   precomputed_lagrange_polynomials.reserve(m);
 
-  std::vector<GF> x_except_k;
-  GF denominator;
+  // std::vector<GF> x_except_k;
+  // GF denominator;
   for (size_t k = 0; k < m; k++) {
-    denominator = GF(1);
-    x_except_k.clear();
-    x_except_k.reserve(m - 1);
-    for (size_t j = 0; j < m; j++) {
-      if (k != j) {
-        denominator *= x_values[k] - x_values[j];
-        x_except_k.push_back(x_values[j]);
-      }
-    }
-    std::vector<GF> numerator = build_from_roots(x_except_k);
 
-    numerator = numerator * denominator.inverse();
+    std::vector<GF> a_precomputed_denominator;
+    a_precomputed_denominator.reserve(1);
+    a_precomputed_denominator.push_back(precomputed_denominator[k]);
+
+    // denominator = GF(1);
+    // x_except_k.clear();
+    // x_except_k.reserve(m - 1);
+    // for (size_t j = 0; j < m; j++) {
+    //   if (k != j) {
+    //     denominator *= x_values[k] - x_values[j];
+    //     x_except_k.push_back(x_values[j]);
+    //   }
+    // }
+    // std::vector<GF> numerator = build_from_roots(x_except_k);
+
+    std::vector<GF> x_k;
+    x_k.reserve(1);
+    x_k.push_back(x_values[k]);
+    std::vector<GF> numerator = x_minus_xi / build_from_roots(x_k)[0];
+
+    numerator = a_precomputed_denominator * numerator;
     precomputed_lagrange_polynomials.push_back(numerator);
   }
 
@@ -362,7 +374,9 @@ std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs) {
       const size_t root_count, std::ifstream &file);                           \
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
   template std::vector<std::vector<TYPE>>                                      \
-  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
+  field::precompute_lagrange_polynomials(                                      \
+      const std::vector<TYPE> &x_values, const std::vector<TYPE> x_minus_xi,   \
+      const std::vector<TYPE> precomputed_denominator);                        \
   template void field::write_precomputed_denominator_to_file(                  \
       const std::vector<TYPE> &x_values);                                      \
   template void field::write_precomputed_x_minus_xi_to_file(                   \
