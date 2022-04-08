@@ -542,25 +542,15 @@ TEST_CASE("Fast interpolation == Optimized custom interpolation GF(2^128)",
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y_fast =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-
-  // Precompute and write to file
-  field::write_precomputed_denominator_to_file(x_fast);
-  std::ofstream file_out;
-  file_out.open("precomputed_x_minus_xi_out.txt");
-  field::write_precomputed_x_minus_xi_poly_splits_to_file(x_fast, file_out);
-  // Reading the precomputed part
-  std::vector<field::GF2_128> precomputed_denominator;
-  field::read_precomputed_denominator_from_file(precomputed_denominator,
-                                                x_fast.size());
-  std::ifstream file_in;
-  file_in.open("precomputed_x_minus_xi_out.txt");
-  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi_poly_splits;
-  field::read_precomputed_x_minus_xi_poly_splits_to_file(
-      precomputed_x_minus_xi_poly_splits, x_fast.size(), file_in);
+  std::vector<field::GF2_128> precomputed_denominator =
+      field::precompute_denominator(x_fast);
+  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+  field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+  field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
 
   std::vector<field::GF2_128> result_fast = field::interpolate_with_recurrsion(
-      y_fast, precomputed_denominator, precomputed_x_minus_xi_poly_splits, 0,
-      x_fast.size(), 0, precomputed_x_minus_xi_poly_splits.size());
+      y_fast, precomputed_denominator, precomputed_x_minus_xi, 0, x_fast.size(),
+      0, precomputed_x_minus_xi.size());
 
   REQUIRE(result.size() == result_fast.size());
   REQUIRE(result == result_fast);
@@ -604,50 +594,32 @@ TEST_CASE("Fast interpolation preprocessing GF(2^128) (BENCHMARK)",
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y_fast =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> precomputed_denominator =
+      field::precompute_denominator(x_fast);
+  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+  field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+  field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
 
-  // Precompute and write to file
-  field::write_precomputed_denominator_to_file(x_fast);
-  std::ofstream file_out;
-  file_out.open("precomputed_x_minus_xi_out.txt");
-  field::write_precomputed_x_minus_xi_poly_splits_to_file(x_fast, file_out);
-
-  // Reading the precomputed part
-  std::vector<field::GF2_128> precomputed_denominator;
-  field::read_precomputed_denominator_from_file(precomputed_denominator,
-                                                x_fast.size());
-  std::ifstream file_in;
-  file_in.open("precomputed_x_minus_xi_out.txt");
-  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi_poly_splits;
-  field::read_precomputed_x_minus_xi_poly_splits_to_file(
-      precomputed_x_minus_xi_poly_splits, x_fast.size(), file_in);
-
-  field::interpolate_with_recurrsion(
-      y_fast, precomputed_denominator, precomputed_x_minus_xi_poly_splits, 0,
-      x_fast.size(), 0, precomputed_x_minus_xi_poly_splits.size());
+  std::vector<field::GF2_128> result_fast = field::interpolate_with_recurrsion(
+      y_fast, precomputed_denominator, precomputed_x_minus_xi, 0, x_fast.size(),
+      0, precomputed_x_minus_xi.size());
 
   BENCHMARK("FAST PREPROCESSING") {
     std::vector<field::GF2_128> x_fast =
         field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
     std::vector<field::GF2_128> y_fast =
         field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-    field::write_precomputed_denominator_to_file(x_fast);
-    std::ofstream file_out;
-    file_out.open("precomputed_x_minus_xi_out.txt");
-    field::write_precomputed_x_minus_xi_poly_splits_to_file(x_fast, file_out);
-    std::vector<field::GF2_128> precomputed_denominator;
-    field::read_precomputed_denominator_from_file(precomputed_denominator,
-                                                  x_fast.size());
-    std::ifstream file_in;
-    file_in.open("precomputed_x_minus_xi_out.txt");
-    std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi_poly_splits;
-    field::read_precomputed_x_minus_xi_poly_splits_to_file(
-        precomputed_x_minus_xi_poly_splits, x_fast.size(), file_in);
+    std::vector<field::GF2_128> precomputed_denominator =
+        field::precompute_denominator(x_fast);
+    std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+    field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+    field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
   };
 
   BENCHMARK("FAST INTERPOLATION") {
-    return field::interpolate_with_recurrsion(
-        y_fast, precomputed_denominator, precomputed_x_minus_xi_poly_splits, 0,
-        x_fast.size(), 0, precomputed_x_minus_xi_poly_splits.size());
+    field::interpolate_with_recurrsion(y_fast, precomputed_denominator,
+                                       precomputed_x_minus_xi, 0, x_fast.size(),
+                                       0, precomputed_x_minus_xi.size());
   };
 }
 

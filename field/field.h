@@ -195,21 +195,19 @@ public:
                                       const field::GF2_256 &ele);
 };
 
+// Use to precompute the constants of the denominaotr.inverse()
 template <typename GF>
-void read_precomputed_denominator_from_file(
-    std::vector<GF> &precomputed_denominator, size_t x_len);
+std::vector<GF> precompute_denominator(const std::vector<GF> &x_values);
 
 template <typename GF>
-void read_precomputed_x_minus_xi_poly_splits_to_file(
-    std::vector<std::vector<GF>> &precomputed_x_minus_xi,
-    const size_t root_count, std::ifstream &file);
+void set_x_minus_xi_poly_size(
+    std::vector<std::vector<GF>> &precomputed_x_minus_xi, size_t root_count);
 
+// Use to precompute x - xi recurssively
 template <typename GF>
-void write_precomputed_denominator_to_file(const std::vector<GF> &x_values);
-
-template <typename GF>
-void write_precomputed_x_minus_xi_poly_splits_to_file(
-    const std::vector<GF> &x_values, std::ofstream &file);
+void precompute_x_minus_xi_poly_splits(
+    const std::vector<GF> &x_values,
+    std::vector<std::vector<GF>> &precomputed_x_minus_xi);
 
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
 
