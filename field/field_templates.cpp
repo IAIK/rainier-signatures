@@ -91,7 +91,7 @@ void precompute_x_minus_xi_poly_splits(
 // (not-optimized)
 template <typename GF>
 std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
+precompute_lagrange_polynomials_slow(const std::vector<GF> &x_values) {
   size_t m = x_values.size();
   std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
   precomputed_lagrange_polynomials.reserve(m);
@@ -121,12 +121,12 @@ precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
 // (optimized)
 template <typename GF>
 std::vector<std::vector<GF>>
-precompute_lagrange_polynomials(const std::vector<GF> &x_values,
-                                const std::vector<GF> x_minus_xi) {
+precompute_lagrange_polynomials(const std::vector<GF> &x_values) {
   size_t m = x_values.size();
   std::vector<std::vector<GF>> precomputed_lagrange_polynomials;
   precomputed_lagrange_polynomials.reserve(m);
 
+  std::vector<GF> x_minus_xi = build_from_roots(x_values);
   for (size_t k = 0; k < m; k++) {
 
     std::vector<GF> numerator = x_minus_xi / x_values[k];
@@ -338,10 +338,10 @@ std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs) {
   template std::vector<TYPE> field::get_first_n_field_elements(size_t n);      \
   template TYPE field::eval(const std::vector<TYPE> &poly, const TYPE &point); \
   template std::vector<std::vector<TYPE>>                                      \
-  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
+  field::precompute_lagrange_polynomials_slow(                                 \
+      const std::vector<TYPE> &x_values);                                      \
   template std::vector<std::vector<TYPE>>                                      \
-  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values,    \
-                                         const std::vector<TYPE> x_minus_xi);  \
+  field::precompute_lagrange_polynomials(const std::vector<TYPE> &x_values);   \
   template std::vector<TYPE> field::interpolate_with_recurrsion(               \
       const std::vector<TYPE> &y_values,                                       \
       const std::vector<TYPE> &precomputed_denominator,                        \

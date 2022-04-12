@@ -505,7 +505,7 @@ TEST_CASE("Optimized custom interpolation == custom interpolation GF(2^128) "
   std::vector<field::GF2_128> y =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<std::vector<field::GF2_128>> a_lag =
-      field::precompute_lagrange_polynomials(x);
+      field::precompute_lagrange_polynomials_slow(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(a_lag, y);
 
@@ -513,9 +513,8 @@ TEST_CASE("Optimized custom interpolation == custom interpolation GF(2^128) "
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y_opti =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-  std::vector<field::GF2_128> x_minus_xi_poly = field::build_from_roots(x_opti);
   std::vector<std::vector<field::GF2_128>> x_lag =
-      field::precompute_lagrange_polynomials(x_opti, x_minus_xi_poly);
+      field::precompute_lagrange_polynomials(x_opti);
   std::vector<field::GF2_128> result_optim =
       field::interpolate_with_precomputation(x_lag, y_opti);
 
@@ -531,10 +530,8 @@ TEST_CASE("Fast interpolation == Optimized custom interpolation GF(2^128)",
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-  std::vector<field::GF2_128> x_minus_xi_poly = field::build_from_roots(x);
-
   std::vector<std::vector<field::GF2_128>> x_lag =
-      field::precompute_lagrange_polynomials(x, x_minus_xi_poly);
+      field::precompute_lagrange_polynomials(x);
   std::vector<field::GF2_128> result =
       field::interpolate_with_precomputation(x_lag, y);
 
@@ -565,9 +562,8 @@ TEST_CASE("Optimized custom interpolation preprocessing GF(2^128) (BENCHMARK)",
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
   std::vector<field::GF2_128> y =
       field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-  std::vector<field::GF2_128> x_minus_xi_poly = field::build_from_roots(x);
   std::vector<std::vector<field::GF2_128>> x_lag =
-      field::precompute_lagrange_polynomials(x, x_minus_xi_poly);
+      field::precompute_lagrange_polynomials(x);
 
   field::interpolate_with_precomputation(x_lag, y);
 
@@ -576,8 +572,7 @@ TEST_CASE("Optimized custom interpolation preprocessing GF(2^128) (BENCHMARK)",
         field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
     std::vector<field::GF2_128> y =
         field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
-    std::vector<field::GF2_128> x_minus_xi_poly = field::build_from_roots(x);
-    return field::precompute_lagrange_polynomials(x, x_minus_xi_poly);
+    return field::precompute_lagrange_polynomials(x);
   };
 
   BENCHMARK("OPTIMIZED INTERPOLATION") {
