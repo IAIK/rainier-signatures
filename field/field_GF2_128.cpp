@@ -91,8 +91,10 @@ inline void reduce_u64(__m128i out[1], const __m128i in[2]) {
 }
 
 inline void reduce_clmul(__m128i out[1], const __m128i in[2]) {
+  // x ^ 128 + x ^ 7 + x ^ 2 + x ^ 1 + 1
   __m128i p = _mm_set_epi64x(0x0, 0x87);
   __m128i t0, t1, t2;
+
   t0 = _mm_clmulepi64_si128(in[1], p, 0x01); // in[1]_high * p
   t1 = _mm_slli_si128(t0, 8);    // low 64bit of result, shifted to high
   t2 = _mm_srli_si128(t0, 8);    // high 64bit of result, shifted to high

@@ -909,3 +909,26 @@ TEST_CASE("Matmul and Transposed Matmul have same result GF(2^128)",
       v.multiply_with_transposed_GF2_matrix(m1_transposed);
   REQUIRE(result == result_transposed);
 }
+
+TEST_CASE("Karatsuba Arbitary Degree Fast Polynomial Multiplication == Naive "
+          "Polynomial Multiplication",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> root =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> poly1 = field::build_from_roots(root);
+  std::vector<field::GF2_128> poly2 = field::build_from_roots(root);
+
+  for (size_t i = 0; i < poly2.size(); i++) {
+    poly2[i] += field::GF2_128(1);
+  }
+
+  std::vector<field::GF2_128> naive_mul = poly1 * poly2;
+
+  std::vector<field::GF2_128> karat_arbdeg_mul =
+      field::mul_karatsuba_arbideg(poly1, poly2);
+
+  REQUIRE(naive_mul == karat_arbdeg_mul);
+}

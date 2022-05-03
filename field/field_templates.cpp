@@ -231,6 +231,57 @@ std::vector<GF> build_from_roots(const std::vector<GF> &roots) {
   return poly;
 }
 
+template <typename GF>
+// Multiplies polynomial of arbitarty degree
+std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
+                                      const std::vector<GF> &rhs) {
+
+  if (lhs.size() != rhs.size())
+    throw std::runtime_error("karatsuba mul vectors of different sizes");
+
+  GF d[lhs.size()];
+  std::vector<GF> c(lhs.size() + rhs.size() - 1);
+
+  // When i == 0
+  d[0] = lhs[0] * rhs[0];
+
+  // When i == 1
+  d[1] = lhs[1] * rhs[1];
+  c[1] = ((lhs[0] + lhs[1]) * (rhs[0] + rhs[1])) - (d[1] + d[0]);
+
+  // When i == 2..poly_length
+  for (size_t i = 2; i < lhs.size(); ++i) {
+    d[i] = lhs[i] * rhs[i];
+    GF sum;
+    for (size_t t = i; t > i / 2; --t) {
+      sum +=
+          ((lhs[i - t] + lhs[t]) * (rhs[i - t] + rhs[t])) - (d[t] + d[i - t]);
+    }
+    // If i is even
+    sum += d[i / 2] * ((i + 1) % 2);
+    c[i] = sum;
+  }
+
+  // When i == poly_len..poly_len*2-3
+  for (size_t i = lhs.size(); i <= lhs.size() + rhs.size() - 3; ++i) {
+    GF sum;
+    for (size_t t = lhs.size() - 1; t > i / 2; --t) {
+      sum +=
+          ((lhs[i - t] + lhs[t]) * (rhs[i - t] + rhs[t])) - (d[t] + d[i - t]);
+    }
+
+    // If i is even
+    sum += d[i / 2] * ((i + 1) % 2);
+    c[i] = sum;
+  }
+
+  // Setting the first and the last i
+  c[0] = d[0];
+  c[lhs.size() + rhs.size() - 2] = d[lhs.size() - 1];
+
+  return c;
+}
+
 // horner eval
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point) {
   GF acc;
@@ -329,6 +380,8 @@ std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs) {
 #define INSTANTIATE_TEMPLATES_FOR(TYPE)                                        \
   template std::vector<TYPE> field::precompute_denominator(                    \
       const std::vector<TYPE> &x_values);                                      \
+  template std::vector<TYPE> field::mul_karatsuba_arbideg(                     \
+      const std::vector<TYPE> &lhs, const std::vector<TYPE> &rhs);             \
   template void field::set_x_minus_xi_poly_size(                               \
       std::vector<std::vector<TYPE>> &precomputed_x_minus_xi,                  \
       size_t root_count);                                                      \

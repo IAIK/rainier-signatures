@@ -242,6 +242,10 @@ std::vector<GF> interpolate_with_recurrsion(
 template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);
 
+template <typename GF>
+std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
+                                      const std::vector<GF> &rhs);
+
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point);
 
 } // namespace field
