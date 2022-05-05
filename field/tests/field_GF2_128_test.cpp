@@ -932,3 +932,28 @@ TEST_CASE("Karatsuba Arbitary Degree Fast Polynomial Multiplication == Naive "
 
   REQUIRE(naive_mul == karat_arbdeg_mul);
 }
+
+TEST_CASE("Karatsuba Pow 2 - 1 Degree Fast Polynomial Multiplication == Naive "
+          "Polynomial Multiplication",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> root =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> poly1 = field::build_from_roots(root);
+  std::vector<field::GF2_128> poly2 = field::build_from_roots(root);
+  for (size_t i = 0; i < poly2.size(); i++) {
+    poly2[i] += field::GF2_128(1);
+  }
+
+  std::vector<field::GF2_128> naive_mul = poly1 * poly2;
+
+  size_t old_poly1_size = poly1.size();
+  field::mul_karatsuba_fixdeg_precondition_poly(poly1, poly2);
+  std::vector<field::GF2_128> karat_pow2deg_mul =
+      field::mul_karatsuba_arbideg(poly1, poly2);
+  field::mul_karatsuba_fixdeg_normalize_poly(karat_pow2deg_mul, old_poly1_size);
+
+  REQUIRE(naive_mul == karat_pow2deg_mul);
+}

@@ -246,6 +246,19 @@ template <typename GF>
 std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
                                       const std::vector<GF> &rhs);
 
+template <typename GF>
+void mul_karatsuba_fixdeg_precondition_poly(std::vector<GF> &lhs,
+                                            std::vector<GF> &rhs);
+
+template <typename GF>
+void mul_karatsuba_fixdeg_normalize_poly(std::vector<GF> &poly,
+                                         size_t old_size);
+
+template <typename GF>
+std::vector<GF>
+mul_karatsuba_fixdeg(const std::vector<GF> &lhs, const std::vector<GF> &rhs,
+                     const size_t start_idx, const size_t end_idx);
+
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point);
 
 } // namespace field

@@ -282,6 +282,86 @@ std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
   return c;
 }
 
+template <typename GF>
+// Adding dummy values to make the coeff size a power of 2
+void mul_karatsuba_fixdeg_precondition_poly(std::vector<GF> &lhs,
+                                            std::vector<GF> &rhs) {
+
+  // Computes the next power of 2 for a 32 bit number
+  // This represents the no. of coeffs
+  size_t next_2_pow = lhs.size();
+  next_2_pow--;
+  next_2_pow |= next_2_pow >> 1;
+  next_2_pow |= next_2_pow >> 2;
+  next_2_pow |= next_2_pow >> 4;
+  next_2_pow |= next_2_pow >> 8;
+  next_2_pow |= next_2_pow >> 16;
+  next_2_pow++;
+
+  // Putting the dummy terms in the begining to make the polys 2^n - 1 degree ->
+  // 2^n coeff
+  lhs.resize(next_2_pow, GF(0));
+  rhs.resize(next_2_pow, GF(0));
+}
+
+template <typename GF>
+// Adding dummy values to make the coeff size a power of 2
+void mul_karatsuba_fixdeg_normalize_poly(std::vector<GF> &poly,
+                                         size_t old_size) {
+  poly.resize((old_size << 1) - 1);
+}
+
+template <typename GF>
+// Multiplies polynomial of 2^n - 1 degree -> 2^n coeff
+std::vector<GF>
+mul_karatsuba_fixdeg(const std::vector<GF> &lhs, const std::vector<GF> &rhs,
+                     const size_t start_idx, const size_t end_idx) {
+
+  size_t full_size = ((end_idx - start_idx) + 1);
+  size_t half_size = full_size / 2;
+
+  // If a polynomial with degree 0 -> const
+  if (full_size == 1) {
+    return std::vector<GF>(1, lhs[start_idx] * rhs[start_idx]);
+  }
+
+  std::vector<GF> d_0 =
+      mul_karatsuba_fixdeg(lhs, rhs, start_idx, (start_idx + half_size) - 1);
+  std::vector<GF> d_1 =
+      mul_karatsuba_fixdeg(lhs, rhs, (start_idx + half_size), end_idx);
+
+  std::vector<GF> lhs_l_add_u, rhs_l_add_u;
+  lhs_l_add_u.reserve(half_size);
+  rhs_l_add_u.reserve(half_size);
+  // Getting the lower of lhs and rhs
+  for (size_t i = start_idx; i < start_idx + half_size; ++i) {
+    lhs_l_add_u.push_back(lhs[i] + lhs[half_size + i]);
+    rhs_l_add_u.push_back(rhs[i] + rhs[half_size + i]);
+  }
+  std::vector<GF> d_01 =
+      mul_karatsuba_fixdeg(lhs_l_add_u, rhs_l_add_u, 0, half_size - 1);
+
+  std::vector<GF> c(d_1.size() + full_size);
+  // D_1*x^n + (D_01 - D_0 - D_1)*x^(n/2) + d_0
+  size_t cidx = c.size();
+  for (size_t i = d_1.size(); i; --i) {
+    c[cidx - 1] += d_1[i - 1];
+    cidx--;
+  }
+  cidx = c.size() * 3 / 4;
+  for (size_t i = d_0.size(); i; --i) {
+    c[cidx - 1] += (d_01[i - 1] - d_0[i - 1] - d_1[i - 1]);
+    cidx--;
+  }
+  cidx = (c.size() / 2);
+  for (size_t i = d_0.size(); i; --i) {
+    c[cidx - 1] += d_0[i - 1];
+    cidx--;
+  }
+
+  return c;
+}
+
 // horner eval
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point) {
   GF acc;
@@ -382,6 +462,13 @@ std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs) {
       const std::vector<TYPE> &x_values);                                      \
   template std::vector<TYPE> field::mul_karatsuba_arbideg(                     \
       const std::vector<TYPE> &lhs, const std::vector<TYPE> &rhs);             \
+  template void field::mul_karatsuba_fixdeg_precondition_poly(                 \
+      std::vector<TYPE> &lhs, std::vector<TYPE> &rhs);                         \
+  template void field::mul_karatsuba_fixdeg_normalize_poly(                    \
+      std::vector<TYPE> &poly, size_t old_size);                               \
+  template std::vector<TYPE> field::mul_karatsuba_fixdeg(                      \
+      const std::vector<TYPE> &lhs, const std::vector<TYPE> &rhs,              \
+      const size_t start_idx, const size_t end_idx);                           \
   template void field::set_x_minus_xi_poly_size(                               \
       std::vector<std::vector<TYPE>> &precomputed_x_minus_xi,                  \
       size_t root_count);                                                      \
