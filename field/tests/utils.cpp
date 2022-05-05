@@ -50,9 +50,6 @@ void init_ntl_extension_field(NTL_INSTANCE instance) {
 GF2E GF2E_from_bytes(const std::vector<uint8_t> &value) {
   // assumes value is already smaller than current modulus
   GF2X inner = GF2XFromBytes(value.data(), value.size());
-  // GF2E result(INIT_NO_ALLOC);
-  // result.LoopHole() = inner;
-  // return result;
   return conv<GF2E>(inner);
 }
 

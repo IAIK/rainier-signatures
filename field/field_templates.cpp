@@ -242,14 +242,14 @@ std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
   GF d[lhs.size()];
   std::vector<GF> c(lhs.size() + rhs.size() - 1);
 
-  // When i == 0
+  // For i == 0
   d[0] = lhs[0] * rhs[0];
 
-  // When i == 1
+  // For i == 1
   d[1] = lhs[1] * rhs[1];
   c[1] = ((lhs[0] + lhs[1]) * (rhs[0] + rhs[1])) - (d[1] + d[0]);
 
-  // When i == 2..poly_length
+  // For i == 2..poly_length
   for (size_t i = 2; i < lhs.size(); ++i) {
     d[i] = lhs[i] * rhs[i];
     GF sum;
@@ -262,7 +262,7 @@ std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
     c[i] = sum;
   }
 
-  // When i == poly_len..poly_len*2-3
+  // For i == poly_len..poly_len*2-3
   for (size_t i = lhs.size(); i <= lhs.size() + rhs.size() - 3; ++i) {
     GF sum;
     for (size_t t = lhs.size() - 1; t > i / 2; --t) {

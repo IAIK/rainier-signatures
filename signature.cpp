@@ -1101,13 +1101,6 @@ bool rainier_verify_template(const signature_instance_t &instance,
         P_shares[0][k] += proof.P_delta[k - L];
       }
     }
-    // for (size_t party = 0; party < instance.num_MPC_parties; party++) {
-    //// iterpolate polynomial P_e^1 from 2m+1 points
-    // if (party != missing_parties[repetition]) {
-    // P_ei[repetition][party] = utils::interpolate_with_precomputation(
-    // precomputation_for_zero_to_2L, P_shares[party]);
-    //}
-    //}
   }
 
   /////////////////////////////////////////////////////////////////////////////
