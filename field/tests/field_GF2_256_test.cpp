@@ -761,11 +761,6 @@ TEST_CASE("NTL inverse == custom GF(2^256)", "[GF2_256]") {
   field::GF2_256 b = a.inverse();
   field::GF2_256 c =
       utils::ntl_to_custom<field::GF2_256>(inv(utils::custom_to_ntl(a)));
-  // std::cout << utils::custom_to_ntl(a) << ", " << utils::custom_to_ntl(b)
-  //<< ", " << utils::custom_to_ntl(c) << "\n";
-  // std::cout << utils::custom_to_ntl(a * b) << ", "
-  //<< utils::custom_to_ntl(a * c) << ", "
-  //<< utils::custom_to_ntl(a) * utils::custom_to_ntl(c) << "\n";
   REQUIRE(b == c);
   REQUIRE(a * b == field::GF2_256(1));
 }

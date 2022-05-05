@@ -4,6 +4,7 @@
 
 #include "../field.h"
 #include "utils.h"
+#include <complex>
 
 #include <NTL/GF2EX.h>
 
@@ -447,11 +448,6 @@ TEST_CASE("NTL inverse == custom inverse GF(2^128)", "[GF2_128]") {
   field::GF2_128 b = a.inverse();
   field::GF2_128 c =
       utils::ntl_to_custom<field::GF2_128>(inv(utils::custom_to_ntl(a)));
-  // std::cout << utils::custom_to_ntl(a) << ", " << utils::custom_to_ntl(b)
-  //<< ", " << utils::custom_to_ntl(c) << "\n";
-  // std::cout << utils::custom_to_ntl(a * b) << ", "
-  //<< utils::custom_to_ntl(a * c) << ", "
-  //<< utils::custom_to_ntl(a) * utils::custom_to_ntl(c) << "\n";
   REQUIRE(b == c);
   REQUIRE(a * b == field::GF2_128(1));
   BENCHMARK("GF inverse") { return a.inverse(); };
@@ -490,6 +486,130 @@ TEST_CASE("NTL interpolation == custom interpolation GF(2^128)", "[GF2_128]") {
   };
   BENCHMARK("Lagrange Poly Interpolation") {
     return field::interpolate_with_precomputation(a_lag, a);
+  };
+}
+
+TEST_CASE("Optimized custom interpolation == custom interpolation GF(2^128) "
+          "(Power of 2 roots)",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> x =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<std::vector<field::GF2_128>> a_lag =
+      field::precompute_lagrange_polynomials_slow(x);
+  std::vector<field::GF2_128> result =
+      field::interpolate_with_precomputation(a_lag, y);
+
+  std::vector<field::GF2_128> x_opti =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y_opti =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<std::vector<field::GF2_128>> x_lag =
+      field::precompute_lagrange_polynomials(x_opti);
+  std::vector<field::GF2_128> result_optim =
+      field::interpolate_with_precomputation(x_lag, y_opti);
+
+  REQUIRE(result == result_optim);
+}
+
+TEST_CASE("Fast interpolation == Optimized custom interpolation GF(2^128)",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> x =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<std::vector<field::GF2_128>> x_lag =
+      field::precompute_lagrange_polynomials(x);
+  std::vector<field::GF2_128> result =
+      field::interpolate_with_precomputation(x_lag, y);
+
+  std::vector<field::GF2_128> x_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> precomputed_denominator =
+      field::precompute_denominator(x_fast);
+  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+  field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+  field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
+
+  std::vector<field::GF2_128> result_fast = field::interpolate_with_recurrsion(
+      y_fast, precomputed_denominator, precomputed_x_minus_xi, 0, x_fast.size(),
+      0, precomputed_x_minus_xi.size());
+
+  REQUIRE(result.size() == result_fast.size());
+  REQUIRE(result == result_fast);
+}
+
+TEST_CASE("Optimized custom interpolation preprocessing GF(2^128) (BENCHMARK)",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 512;
+
+  std::vector<field::GF2_128> x =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<std::vector<field::GF2_128>> x_lag =
+      field::precompute_lagrange_polynomials(x);
+
+  field::interpolate_with_precomputation(x_lag, y);
+
+  BENCHMARK("OPTIMIZED PREPROCESSING") {
+    std::vector<field::GF2_128> x =
+        field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+    std::vector<field::GF2_128> y =
+        field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+    return field::precompute_lagrange_polynomials(x);
+  };
+
+  BENCHMARK("OPTIMIZED INTERPOLATION") {
+    return field::interpolate_with_precomputation(x_lag, y);
+  };
+}
+
+TEST_CASE("Fast interpolation preprocessing GF(2^128) (BENCHMARK)",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 512;
+
+  std::vector<field::GF2_128> x_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> y_fast =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> precomputed_denominator =
+      field::precompute_denominator(x_fast);
+  std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+  field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+  field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
+
+  std::vector<field::GF2_128> result_fast = field::interpolate_with_recurrsion(
+      y_fast, precomputed_denominator, precomputed_x_minus_xi, 0, x_fast.size(),
+      0, precomputed_x_minus_xi.size());
+
+  BENCHMARK("FAST PREPROCESSING") {
+    std::vector<field::GF2_128> x_fast =
+        field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+    std::vector<field::GF2_128> y_fast =
+        field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+    std::vector<field::GF2_128> precomputed_denominator =
+        field::precompute_denominator(x_fast);
+    std::vector<std::vector<field::GF2_128>> precomputed_x_minus_xi;
+    field::set_x_minus_xi_poly_size(precomputed_x_minus_xi, x_fast.size());
+    field::precompute_x_minus_xi_poly_splits(x_fast, precomputed_x_minus_xi);
+  };
+
+  BENCHMARK("FAST INTERPOLATION") {
+    field::interpolate_with_recurrsion(y_fast, precomputed_denominator,
+                                       precomputed_x_minus_xi, 0, x_fast.size(),
+                                       0, precomputed_x_minus_xi.size());
   };
 }
 
@@ -783,4 +903,52 @@ TEST_CASE("Matmul and Transposed Matmul have same result GF(2^128)",
   field::GF2_128 result_transposed =
       v.multiply_with_transposed_GF2_matrix(m1_transposed);
   REQUIRE(result == result_transposed);
+}
+
+TEST_CASE("Karatsuba Arbitary Degree Fast Polynomial Multiplication == Naive "
+          "Polynomial Multiplication",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> root =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> poly1 = field::build_from_roots(root);
+  std::vector<field::GF2_128> poly2 = field::build_from_roots(root);
+
+  for (size_t i = 0; i < poly2.size(); i++) {
+    poly2[i] += field::GF2_128(1);
+  }
+
+  std::vector<field::GF2_128> naive_mul = poly1 * poly2;
+
+  std::vector<field::GF2_128> karat_arbdeg_mul =
+      field::mul_karatsuba_arbideg(poly1, poly2);
+
+  REQUIRE(naive_mul == karat_arbdeg_mul);
+}
+
+TEST_CASE("Karatsuba Pow 2 - 1 Degree Fast Polynomial Multiplication == Naive "
+          "Polynomial Multiplication",
+          "[GF2_128]") {
+
+  constexpr size_t ROOT_SIZE = 128;
+
+  std::vector<field::GF2_128> root =
+      field::get_first_n_field_elements<field::GF2_128>(ROOT_SIZE);
+  std::vector<field::GF2_128> poly1 = field::build_from_roots(root);
+  std::vector<field::GF2_128> poly2 = field::build_from_roots(root);
+  for (size_t i = 0; i < poly2.size(); i++) {
+    poly2[i] += field::GF2_128(1);
+  }
+
+  std::vector<field::GF2_128> naive_mul = poly1 * poly2;
+
+  size_t old_poly1_size = poly1.size();
+  field::mul_karatsuba_fixdeg_precondition_poly(poly1, poly2);
+  std::vector<field::GF2_128> karat_pow2deg_mul =
+      field::mul_karatsuba_arbideg(poly1, poly2);
+  field::mul_karatsuba_fixdeg_normalize_poly(karat_pow2deg_mul, old_poly1_size);
+
+  REQUIRE(naive_mul == karat_pow2deg_mul);
 }

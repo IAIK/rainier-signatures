@@ -92,7 +92,6 @@ SeedTree::SeedTree(const std::vector<uint8_t> &seed, const size_t num_leaves,
   // push back root seed
   _seed_size = seed.size();
   _data.resize(_num_total_nodes * _seed_size);
-  //_data[0] = seed;
   std::copy(std::begin(seed), std::end(seed), std::begin(_data));
 
   size_t last_non_leaf = get_parent(_num_total_nodes - 1);
@@ -290,21 +289,6 @@ SeedTree::SeedTree(const reveal_list_t &reveallist, const size_t num_leaves,
                   rep_idx, i, dst);
     }
   }
-  // for (size_t i = 0; i <= last_non_leaf; i++) {
-  // if (!node_exists(i) || !node_has_value(i))
-  // continue;
-  //_node_has_value[2 * i + 1] = true;
-  // if (node_exists(2 * i + 2)) {
-  // gsl::span dst(&_data[(2 * i + 1) * _seed_size], 2 * _seed_size);
-  // expand_seed(gsl::span<uint8_t>(&_data[i * _seed_size], _seed_size), salt,
-  // rep_idx, i, dst);
-  //_node_has_value[2 * i + 2] = true;
-  //} else {
-  // gsl::span dst(&_data[(2 * i + 1) * _seed_size], _seed_size);
-  // expand_seed(gsl::span<uint8_t>(&_data[i * _seed_size], _seed_size), salt,
-  // rep_idx, i, dst);
-  //}
-  //}
 }
 
 reveal_list_t SeedTree::reveal_all_but(size_t leaf_idx) {

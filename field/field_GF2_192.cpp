@@ -102,6 +102,7 @@ inline void reduce_clmul(__m128i out[2], const __m128i in[3]) {
   // modulus = x^192 + x^7 + x^2 + x + 1
   __m128i p = _mm_set_epi64x(0x0, 0x87);
   __m128i t0, t1, t2, t3;
+
   t0 = _mm_clmulepi64_si128(in[2], p, 0x01); // in[2]_high * p
   t3 = _mm_xor_si128(in[1], t0);             // update in[1]_low and in[1]_high
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <complex>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
@@ -194,19 +195,72 @@ public:
                                       const field::GF2_256 &ele);
 };
 
+// Use to precompute the constants of the denominaotr.inverse()
+template <typename GF>
+std::vector<GF> precompute_denominator(const std::vector<GF> &x_values);
+
+template <typename GF>
+void set_x_minus_xi_poly_size(
+    std::vector<std::vector<GF>> &precomputed_x_minus_xi, size_t root_count);
+
+// Use to precompute x - xi recurssively
+template <typename GF>
+void precompute_x_minus_xi_poly_splits(
+    const std::vector<GF> &x_values,
+    std::vector<std::vector<GF>> &precomputed_x_minus_xi);
+
 template <typename GF> std::vector<GF> get_first_n_field_elements(size_t n);
+
+template <typename GF>
+std::vector<std::vector<GF>>
+precompute_lagrange_polynomials_slow(const std::vector<GF> &x_values);
+
 template <typename GF>
 std::vector<std::vector<GF>>
 precompute_lagrange_polynomials(const std::vector<GF> &x_values);
+
 template <typename GF>
 std::vector<GF> interpolate_with_precomputation(
     const std::vector<std::vector<GF>> &precomputed_lagrange_polynomials,
     const std::vector<GF> &y_values);
 
 template <typename GF>
+std::vector<GF>
+interpolate_with_precomputation(const std::vector<GF> &precomputed_denominator,
+                                const std::vector<GF> &y_values,
+                                const size_t start_index,
+                                const size_t end_index);
+
+template <typename GF>
+std::vector<GF> interpolate_with_recurrsion(
+    const std::vector<GF> &y_values,
+    const std::vector<GF> &precomputed_denominator,
+    const std::vector<std::vector<GF>> &precomputed_x_minus_xi,
+    const size_t x_start_index, const size_t x_length,
+    const size_t x_minus_xi_first_index, const size_t x_minus_xi_length);
+
+template <typename GF>
 std::vector<GF> build_from_roots(const std::vector<GF> &roots);
 
+template <typename GF>
+std::vector<GF> mul_karatsuba_arbideg(const std::vector<GF> &lhs,
+                                      const std::vector<GF> &rhs);
+
+template <typename GF>
+void mul_karatsuba_fixdeg_precondition_poly(std::vector<GF> &lhs,
+                                            std::vector<GF> &rhs);
+
+template <typename GF>
+void mul_karatsuba_fixdeg_normalize_poly(std::vector<GF> &poly,
+                                         size_t old_size);
+
+template <typename GF>
+std::vector<GF>
+mul_karatsuba_fixdeg(const std::vector<GF> &lhs, const std::vector<GF> &rhs,
+                     const size_t start_idx, const size_t end_idx);
+
 template <typename GF> GF eval(const std::vector<GF> &poly, const GF &point);
+
 } // namespace field
 
 template <typename GF>
@@ -221,3 +275,5 @@ std::vector<GF> operator*(const GF &lhs, const std::vector<GF> &rhs);
 template <typename GF>
 std::vector<GF> operator*(const std::vector<GF> &lhs,
                           const std::vector<GF> &rhs);
+template <typename GF>
+std::vector<GF> operator/(const std::vector<GF> &lhs, const GF &rhs);
